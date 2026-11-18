@@ -2,8 +2,8 @@
 
 ## Tahap aktif
 
-Tahap 6 — Versioning dan publish selesai; menunggu persetujuan pengguna sebelum
-Tahap 7.
+Tahap 7 — Public form renderer dan submission selesai; menunggu persetujuan
+pengguna sebelum Tahap 8.
 
 ## Hasil Tahap 0
 
@@ -141,7 +141,7 @@ Status: selesai.
 
 ## Tahap 6 — Versioning dan publish
 
-Status: selesai; menunggu persetujuan pengguna sebelum Tahap 7.
+Status: selesai.
 
 - Menambahkan pointer `published_version_id` pada form; constraint komposit memastikan versi aktif milik form yang sama.
 - Publish berjalan dalam transaksi dengan row lock pada form, memvalidasi schema, menerbitkan draft sebagai snapshot immutable, dan memindahkan pointer versi aktif. Permintaan membawa ID draft yang diharapkan agar double-submit/stale request tidak menerbitkan draft berikutnya; setelah publish, builder menyediakan draft baru dari snapshot tersebut.
@@ -158,10 +158,29 @@ Status: selesai; menunggu persetujuan pengguna sebelum Tahap 7.
 - Migration `2026_11_18_000007_add_published_version_to_forms_table` diterapkan ke PostgreSQL lokal `formora`; `migrate:status` menunjukkan Ran dan `db:table forms` menampilkan `published_version_id` beserta FK komposit. Smoke test publish PostgreSQL dalam transaksi lalu di-rollback — lulus.
 - `git diff --check` — lulus.
 
+## Tahap 7 — Public form renderer dan submission
+
+Status: selesai; menunggu persetujuan pengguna sebelum Tahap 8.
+
+- Menambahkan URL publik unik per form. Slug dibuat saat publish dan migration mengisi slug untuk form yang sudah ada.
+- Form publik hanya membaca versi published aktif; draft, paused, unpublished, dan submission detail tidak tersedia melalui endpoint publik.
+- Renderer menampilkan halaman form bertahap dan semua tipe field yang didukung. Server memvalidasi required, format, pilihan, nilai field yang diizinkan, MIME/ukuran file individual (maksimal 10 MB), serta total upload maksimal 25 MB.
+- Submission menyimpan workspace/form/versi dari database, status `new`, nomor referensi unik, dan jawaban JSONB. Nomor referensi hanya muncul pada sesi konfirmasi; isi jawaban tidak di-flash kembali ke session ketika validasi gagal.
+- File disimpan di disk privat tanpa URL publik. Honeypot dan rate limit 10 pengiriman per menit diterapkan.
+- Migration `2026_11_18_000008_add_public_slug_and_submission_reference` diterapkan ke PostgreSQL lokal; slug dan reference submission lama diisi dari ID, tanpa mengubah jawaban. Smoke test publikasi dan submission PostgreSQL dalam transaksi lalu di-rollback — lulus.
+
+### Validasi Tahap 7
+
+- `vendor/bin/pint --parallel` — lulus.
+- `composer test --no-interaction` — lulus; Pint lulus, PHPStan 0 error, 84 test / 258 assertion lulus.
+- Tes mencakup render tanpa login, hanya schema published, submission ke versi tepat, validasi field, isolasi workspace, file privat, honeypot, rate limit, halaman bertahap, dan ketiadaan endpoint baca submission publik.
+- `npm run build` — lulus dengan peringatan fallback font opsional `fontaine`.
+- `git diff --check` — lulus.
+
 ## Backlog / keputusan tertunda
 
 - Domain final, identitas visual, batas paket, provider object storage/email/pembayaran, kebijakan retensi, role organisasi, sumber data referensi, dan ketentuan legal template dicatat di `docs/IMPLEMENTATION_PLAN.md` dan ditanyakan saat relevan.
 
 ## Tahap berikutnya
 
-Tahap 7 — Public form renderer dan submission. Belum dikerjakan; mulai hanya setelah disetujui pengguna.
+Tahap 8 — Submission management. Belum dikerjakan; mulai hanya setelah disetujui pengguna.

@@ -1,0 +1,229 @@
+<?php
+
+namespace Tests\Feature;
+
+use App\Models\Form;
+use App\Models\FormVersion;
+use App\Models\Workspace;
+use App\Services\FormPublishingService;
+use App\Services\FormSchemaService;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
+use Tests\TestCase;
+
+class PublicFormTest extends TestCase
+{
+    use RefreshDatabase;
+
+    public function test_guest_can_only_see_the_active_published_schema(): void
+    {
+        [$form, $published] = $this->makePublishedForm([
+            ['type' => 'text', 'name' => 'name', 'label' => 'Nama responden', 'required' => true],
+        ]);
+        $schema = $published->schema;
+        $schema['pages'][0]['fields'][0]['label'] = 'Rahasia draft';
+        $form->versions()->create([
+            'version_number' => 2,
+            'schema' => $schema,
+            'is_published' => false,
+        ]);
+
+        $response = $this->get(route('public.forms.show', $form->slug));
+
+        $response->assertOk()->assertSee('Nama responden')->assertDontSee('Rahasia draft');
+        $this->assertGuest();
+    }
+
+    public function test_public_submission_uses_server_form_workspace_and_published_version(): void
+    {
+        [$form, $version] = $this->makePublishedForm([
+            ['type' => 'text', 'name' => 'name', 'label' => 'Nama', 'required' => true],
+        ]);
+        $otherWorkspace = Workspace::factory()->create();
+
+        $response = $this->post(route('public.forms.submit', $form->slug), [
+            'answers' => ['name' => 'Dewi'],
+            'workspace_id' => $otherWorkspace->id,
+            'form_id' => 'forged-form-id',
+            'form_version_id' => 'forged-version-id',
+        ]);
+
+        $submission = $form->submissions()->firstOrFail();
+        $response->assertRedirect(route('public.forms.show', $form->slug));
+        $this->assertSame($form->workspace_id, $submission->workspace_id);
+        $this->assertSame($form->id, $submission->form_id);
+        $this->assertSame($version->id, $submission->form_version_id);
+        $this->assertSame(['name' => 'Dewi'], $submission->response_data);
+        $this->assertSame('new', $submission->status);
+        $this->assertNotEmpty($submission->reference_number);
+        $this->assertSame($submission->reference_number, session('submission_reference'));
+        $this->get('/f/'.$form->slug.'/submissions/'.$submission->reference_number)->assertNotFound();
+
+        $this->post(route('public.forms.submit', $form->slug), ['answers' => ['name' => 'Dewi']])->assertRedirect();
+        $this->assertSame(2, $form->submissions()->distinct()->count('reference_number'));
+    }
+
+    public function test_multi_page_form_renders_and_accepts_answers_from_each_page(): void
+    {
+        [$form] = $this->makePublishedForm([
+            ['type' => 'text', 'name' => 'name', 'label' => 'Nama', 'required' => true],
+            ['type' => 'date', 'name' => 'birth_date', 'label' => 'Tanggal lahir', 'required' => true, 'page' => 1],
+        ]);
+
+        $this->get(route('public.forms.show', $form->slug))
+            ->assertOk()
+            ->assertSee('Nama')
+            ->assertSee('Tanggal lahir')
+            ->assertSee('data-page-next', false);
+
+        $this->from(route('public.forms.show', $form->slug))
+            ->post(route('public.forms.submit', $form->slug), [
+                'current_page' => 1,
+                'answers' => ['birth_date' => '1990-04-22'],
+            ])
+            ->assertSessionHasErrors('answers.name')
+            ->assertSessionHas('failed_page', 0);
+
+        $this->post(route('public.forms.submit', $form->slug), [
+            'answers' => ['name' => 'Dewi', 'birth_date' => '1990-04-22'],
+        ])->assertRedirect();
+
+        $this->assertSame([
+            'name' => 'Dewi',
+            'birth_date' => '1990-04-22',
+        ], $form->submissions()->firstOrFail()->response_data);
+    }
+
+    public function test_invalid_required_email_and_unknown_answer_fields_are_rejected_without_flashing_input(): void
+    {
+        [$form] = $this->makePublishedForm([
+            ['type' => 'email', 'name' => 'email', 'label' => 'Alamat email', 'required' => true],
+        ]);
+
+        $response = $this->from(route('public.forms.show', $form->slug))
+            ->post(route('public.forms.submit', $form->slug), [
+                'answers' => ['email' => 'bukan-email', 'forged' => 'nilai sensitif'],
+            ]);
+
+        $response->assertRedirect(route('public.forms.show', $form->slug))
+            ->assertSessionHasErrors(['answers.email', 'answers']);
+        $response->assertSessionMissing('_old_input');
+        $this->assertSame(0, $form->submissions()->count());
+    }
+
+    public function test_select_and_checkbox_values_must_come_from_published_options(): void
+    {
+        [$form, $version] = $this->makePublishedForm([
+            ['type' => 'select', 'name' => 'region', 'label' => 'Wilayah', 'required' => true],
+            ['type' => 'checkbox', 'name' => 'interests', 'label' => 'Minat', 'required' => false],
+        ]);
+        $schema = $version->schema;
+        $schema['pages'][0]['fields'][0]['settings'] = ['options' => [
+            ['label' => 'Jakarta', 'value' => 'jakarta'],
+            ['label' => 'Bandung', 'value' => 'bandung'],
+        ]];
+        $schema['pages'][0]['fields'][1]['settings'] = ['options' => [
+            ['label' => 'Baca', 'value' => 'baca'],
+            ['label' => 'Olahraga', 'value' => 'olahraga'],
+        ]];
+        $newVersion = $form->versions()->create([
+            'version_number' => 2,
+            'schema' => $schema,
+            'is_published' => false,
+        ]);
+        app(FormPublishingService::class)->publishDraft($form, $newVersion->id, app(FormSchemaService::class));
+
+        $response = $this->from(route('public.forms.show', $form->slug))
+            ->post(route('public.forms.submit', $form->slug), [
+                'answers' => ['region' => 'unknown', 'interests' => ['admin']],
+            ]);
+
+        $response->assertSessionHasErrors(['answers.region', 'answers.interests.0']);
+        $this->assertSame(0, $form->submissions()->count());
+    }
+
+    public function test_paused_and_unpublished_forms_are_not_publicly_accessible(): void
+    {
+        [$pausedForm] = $this->makePublishedForm([
+            ['type' => 'text', 'name' => 'name', 'label' => 'Nama', 'required' => false],
+        ]);
+        app(FormPublishingService::class)->pause($pausedForm);
+        $this->get(route('public.forms.show', $pausedForm->slug))->assertNotFound();
+
+        [$unpublishedForm] = $this->makePublishedForm([
+            ['type' => 'text', 'name' => 'name', 'label' => 'Nama', 'required' => false],
+        ]);
+        app(FormPublishingService::class)->unpublish($unpublishedForm);
+        $this->get(route('public.forms.show', $unpublishedForm->slug))->assertNotFound();
+    }
+
+    public function test_file_upload_is_validated_and_saved_on_private_disk(): void
+    {
+        Storage::fake('local');
+        [$form] = $this->makePublishedForm([
+            ['type' => 'file', 'name' => 'document', 'label' => 'Dokumen', 'required' => true],
+        ]);
+
+        $this->post(route('public.forms.submit', $form->slug), [
+            'answers' => ['document' => UploadedFile::fake()->image('dokumen.jpg')],
+        ])->assertRedirect(route('public.forms.show', $form->slug));
+
+        $submission = $form->submissions()->firstOrFail();
+        $path = $submission->response_data['document']['private_path'];
+        $this->assertStringStartsWith('form-submissions/'.$form->id.'/', $path);
+        Storage::disk('local')->assertExists($path);
+
+        $this->from(route('public.forms.show', $form->slug))
+            ->post(route('public.forms.submit', $form->slug), [
+                'answers' => ['document' => UploadedFile::fake()->create('bad.exe', 20, 'application/x-msdownload')],
+            ])
+            ->assertSessionHasErrors('answers.document');
+        $this->assertSame(1, $form->submissions()->count());
+    }
+
+    public function test_public_submit_route_is_rate_limited(): void
+    {
+        [$form] = $this->makePublishedForm([
+            ['type' => 'text', 'name' => 'name', 'label' => 'Nama', 'required' => true],
+        ]);
+        $url = route('public.forms.submit', $form->slug);
+
+        for ($attempt = 0; $attempt < 10; $attempt++) {
+            $this->post($url, ['website' => 'bot'])->assertRedirect();
+        }
+
+        $this->post($url, ['website' => 'bot'])->assertTooManyRequests();
+    }
+
+    /** @param list<array{type: string, name: string, label: string, required: bool, page?: int}> $fieldDefinitions
+     * @return array{Form, FormVersion}
+     */
+    private function makePublishedForm(array $fieldDefinitions): array
+    {
+        $workspace = Workspace::factory()->create();
+        $form = $workspace->forms()->create(['title' => 'Permohonan Publik', 'status' => 'draft']);
+        $schemas = app(FormSchemaService::class);
+        $schema = $schemas->empty();
+        foreach ($fieldDefinitions as $definition) {
+            $pageIndex = $definition['page'] ?? 0;
+            while (count($schema['pages']) <= $pageIndex) {
+                $schema['pages'][] = $schemas->newPage('Halaman '.(count($schema['pages']) + 1));
+            }
+            $field = $schemas->newField($definition['type'], $schema);
+            $field['name'] = $definition['name'];
+            $field['label'] = $definition['label'];
+            $field['required'] = $definition['required'];
+            $schema['pages'][$pageIndex]['fields'][] = $field;
+        }
+        $draft = $form->versions()->create([
+            'version_number' => 1,
+            'schema' => $schema,
+            'is_published' => false,
+        ]);
+
+        $published = app(FormPublishingService::class)->publishDraft($form, $draft->id, $schemas);
+
+        return [$form->fresh(), $published];
+    }
+}

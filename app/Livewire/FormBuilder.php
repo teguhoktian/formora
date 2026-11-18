@@ -320,6 +320,7 @@ class FormBuilder extends Component
             'fieldTypes' => FormSchemaService::FIELD_TYPES,
             'canPublish' => auth()->user()?->can('publish', $form) ?? false,
             'draftId' => $draftId,
+            'publicUrl' => $form->slug === null ? null : route('public.forms.show', $form->slug),
         ]);
     }
 

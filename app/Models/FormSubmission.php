@@ -15,9 +15,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $form_id
  * @property string $form_version_id
  * @property string $status
+ * @property string|null $reference_number
  * @property array<string, mixed> $response_data
  */
-#[Fillable(['workspace_id', 'form_id', 'form_version_id', 'status', 'response_data'])]
+#[Fillable(['workspace_id', 'form_id', 'form_version_id', 'status', 'response_data', 'reference_number'])]
 class FormSubmission extends Model
 {
     /** @use HasFactory<FormSubmissionFactory> */

@@ -1,10 +1,19 @@
 <?php
 
 use App\Http\Controllers\FormController;
+use App\Http\Controllers\PublicFormController;
 use App\Http\Controllers\WorkspaceController;
 use Illuminate\Support\Facades\Route;
 
 Route::view('/', 'welcome')->name('home');
+
+Route::get('f/{slug}', [PublicFormController::class, 'show'])
+    ->where('slug', '[a-z0-9-]+')
+    ->name('public.forms.show');
+Route::post('f/{slug}', [PublicFormController::class, 'submit'])
+    ->middleware('throttle:10,1')
+    ->where('slug', '[a-z0-9-]+')
+    ->name('public.forms.submit');
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::view('dashboard', 'dashboard')->name('dashboard');

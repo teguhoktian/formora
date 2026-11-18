@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Form;
 use App\Models\FormVersion;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class FormPublishingService
@@ -28,9 +29,16 @@ class FormPublishingService
             $draft->setAttribute('published_at', now()->toDateTimeString());
             $draft->save();
 
+            $slug = $lockedForm->slug;
+            if ($slug === null) {
+                $prefix = trim(Str::substr(Str::slug($lockedForm->title) ?: 'form', 0, 140), '-');
+                $slug = $prefix.'-'.Str::lower(str_replace('-', '', $lockedForm->id));
+            }
+
             $lockedForm->forceFill([
                 'status' => 'published',
                 'published_version_id' => $draft->id,
+                'slug' => $slug,
             ])->save();
 
             return $draft;

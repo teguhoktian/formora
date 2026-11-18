@@ -9,9 +9,9 @@ di bawah; tabel `users`, sesi, cache, queue, dan passkey berasal dari starter ki
 |---|---|---|
 | `workspaces` | Ruang kerja | UUID; memiliki anggota dan form |
 | `workspace_members` | Keanggotaan dan role awal | FK ke workspace dan user; unik per pasangan workspace/user |
-| `forms` | Form, status draft/published/paused/archived, dan versi publik aktif | UUID; memiliki `workspace_id`; unik komposit `(workspace_id, id)` |
+| `forms` | Form, status draft/published/paused/archived, slug publik, dan versi aktif | UUID; memiliki `workspace_id`; unik komposit `(workspace_id, id)`; slug unik |
 | `form_versions` | Snapshot schema form | UUID; JSONB; unik per `(form_id, version_number)` |
-| `form_submissions` | Jawaban form dan status awal | UUID; JSONB; wajib menyimpan `form_version_id` |
+| `form_submissions` | Jawaban form, nomor referensi, dan status awal | UUID; JSONB; menyimpan versi yang dijawab; reference unik |
 | `audit_logs` | Metadata aktivitas | Aktor dan workspace opsional; tidak menyediakan kolom payload/jawaban |
 
 `User` memiliki relasi keanggotaan dan workspace. `Workspace` memiliki relasi
@@ -42,6 +42,10 @@ menyalin isi jawaban, NIK, NPWP, nomor rekening, password, atau isi file ke audi
 log. Audit hanya menyimpan event, aktor/workspace, serta tipe dan ID subjek.
 Penerapan retention, deletion workflow, dan kebijakan akses audit masih menjadi
 pekerjaan hardening sebelum production.
+
+Upload jawaban disimpan pada disk privat `local` di bawah
+`form-submissions/{form-id}`. Nilai jawaban hanya divalidasi menurut schema versi
+publik aktif; upload dibatasi MIME/ukuran di server dan tidak diberi URL publik.
 
 Kolom `is_published` dan `published_at` menandai snapshot historis. Pointer
 `published_version_id` memilih versi aktif; status `paused` mempertahankan pointer,

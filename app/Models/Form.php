@@ -17,8 +17,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string|null $description
  * @property string $status
  * @property string|null $published_version_id
+ * @property string|null $slug
  */
-#[Fillable(['workspace_id', 'title', 'description', 'status', 'published_version_id'])]
+#[Fillable(['workspace_id', 'title', 'description', 'status', 'published_version_id', 'slug'])]
 class Form extends Model
 {
     /** @use HasFactory<FormFactory> */

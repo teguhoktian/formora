@@ -27,6 +27,9 @@
                     <button type="button" wire:click="publishDraft('{{ $draftId }}')" wire:loading.attr="disabled" wire:confirm="Publikasikan versi draf ini?" class="rounded-xl bg-emerald-700 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-800 disabled:opacity-50">Publikasikan</button>
                 @endif
             @endif
+            @if ($form->status === 'published' && $publicUrl)
+                <a href="{{ $publicUrl }}" target="_blank" rel="noopener" class="rounded-xl border border-emerald-300 px-3 py-2 text-xs font-semibold text-emerald-800 hover:bg-emerald-50">Lihat form publik</a>
+            @endif
             <button type="button" wire:click="setTab('preview')" class="rounded-xl border border-slate-300 px-3.5 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-emerald-600">Pratinjau</button>
         </div>
 
