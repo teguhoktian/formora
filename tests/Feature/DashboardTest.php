@@ -2,7 +2,10 @@
 
 namespace Tests\Feature;
 
+use App\Models\Form;
 use App\Models\User;
+use App\Models\Workspace;
+use App\Models\WorkspaceMember;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -23,5 +26,50 @@ class DashboardTest extends TestCase
 
         $response = $this->get(route('dashboard'));
         $response->assertOk();
+    }
+
+    public function test_dashboard_only_shows_data_from_the_active_workspace(): void
+    {
+        $user = User::factory()->create();
+        $otherUser = User::factory()->create();
+        $otherWorkspace = Workspace::factory()->create();
+        WorkspaceMember::factory()->create([
+            'workspace_id' => $otherWorkspace->id,
+            'user_id' => $otherUser->id,
+            'role' => 'owner',
+        ]);
+        Form::factory()->create([
+            'workspace_id' => $otherWorkspace->id,
+            'title' => 'Private workspace form',
+        ]);
+
+        $response = $this->actingAs($user)->get(route('dashboard'));
+
+        $response->assertOk()
+            ->assertDontSee('Private workspace form')
+            ->assertSee('Buat workspace pertama Anda');
+    }
+
+    public function test_dashboard_shows_counts_and_forms_only_for_current_workspace(): void
+    {
+        $user = User::factory()->create();
+        $workspace = Workspace::factory()->create(['name' => 'Tim Contoh']);
+        WorkspaceMember::factory()->create([
+            'workspace_id' => $workspace->id,
+            'user_id' => $user->id,
+            'role' => 'owner',
+        ]);
+        Form::factory()->create([
+            'workspace_id' => $workspace->id,
+            'title' => 'Form Pendaftaran',
+            'status' => 'published',
+        ]);
+
+        $response = $this->actingAs($user)->get(route('dashboard'));
+
+        $response->assertOk()
+            ->assertSee('Tim Contoh')
+            ->assertSee('Form Pendaftaran')
+            ->assertSee('Form dipublikasikan');
     }
 }

@@ -44,6 +44,12 @@ class Workspace extends Model
         return $this->hasMany(Form::class);
     }
 
+    /** @return HasMany<FormSubmission, $this> */
+    public function submissions(): HasMany
+    {
+        return $this->hasMany(FormSubmission::class);
+    }
+
     /** @return HasMany<AuditLog, $this> */
     public function auditLogs(): HasMany
     {

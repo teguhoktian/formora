@@ -2,8 +2,8 @@
 
 ## Tahap aktif
 
-Tahap 3 — Autentikasi dan workspace selesai; menunggu persetujuan pengguna
-sebelum Tahap 4.
+Tahap 4 — Dashboard custom selesai; menunggu persetujuan pengguna sebelum
+Tahap 5.
 
 ## Hasil Tahap 0
 
@@ -57,7 +57,7 @@ Status: selesai.
 
 ## Tahap 2 — Fondasi database dan model
 
-Status: selesai, menunggu persetujuan Tahap 3.
+Status: selesai.
 
 - Menambah tabel `workspaces`, `workspace_members`, `forms`, `form_versions`, `form_submissions`, dan `audit_logs`. Migration `users` bawaan tidak diubah.
 - UUID dipakai untuk workspace, form, versi, dan submission. Schema form serta jawaban submission memakai JSONB di PostgreSQL.
@@ -86,7 +86,7 @@ Status: selesai, menunggu persetujuan Tahap 3.
 
 ## Tahap 3 — Autentikasi dan workspace
 
-Status: selesai, menunggu persetujuan Tahap 4.
+Status: selesai.
 
 - Alur register/login/logout/reset password dan profil tetap menggunakan starter kit Fortify/Livewire.
 - Registrasi membuat user, workspace personal, dan membership owner dalam satu transaksi.
@@ -103,10 +103,27 @@ Status: selesai, menunggu persetujuan Tahap 4.
 - `npm run build` — lulus; Vite mencatat bahwa fallback font opsional membutuhkan paket `fontaine`, sama seperti build sebelumnya.
 - `git diff --check` — lulus.
 
+## Tahap 4 — Dashboard custom
+
+Status: selesai, menunggu persetujuan pengguna sebelum Tahap 5.
+
+- Mengganti dashboard placeholder dengan overview Formora berbahasa Indonesia dalam layout sidebar responsif yang konsisten dengan halaman pengaturan.
+- Menampilkan workspace aktif, jumlah form, jumlah form terpublikasi, total respons, form terbaru, respons terbaru, dan aktivitas terakhir dari database workspace aktif.
+- Pengalih workspace berfungsi di sidebar; form pembuatan workspace tersedia di dashboard. Form dan respons lain tidak ikut terbaca lintas workspace.
+- Empty state, indikator pembaruan Livewire berkala, pesan validasi workspace, label aksesibilitas, dan menu responsif ditambahkan.
+- Navigasi menuju ringkasan, form, respons, workspace, dan pengaturan berfungsi. Template, Smart Fields, dan analitik ditandai “Segera hadir”; CTA pembuatan form dinonaktifkan sampai Form Builder tersedia.
+
+### Validasi Tahap 4
+
+- `composer test --no-interaction` — lulus; Pint dan PHPStan lulus, 56 test / 145 assertion lulus.
+- Tes dashboard membuktikan user tanpa membership tidak melihat form workspace lain dan anggota hanya melihat data workspace aktif.
+- `npm run build` — lulus; Vite mencatat bahwa fallback font opsional membutuhkan paket `fontaine`.
+- `git diff --check` — lulus.
+
 ## Backlog / keputusan tertunda
 
 - Domain final, identitas visual, batas paket, provider object storage/email/pembayaran, kebijakan retensi, role organisasi, sumber data referensi, dan ketentuan legal template dicatat di `docs/IMPLEMENTATION_PLAN.md` dan ditanyakan saat relevan.
 
 ## Tahap berikutnya
 
-Tahap 4 — Dashboard custom. Belum dikerjakan; mulai hanya setelah disetujui pengguna.
+Tahap 5 — Form Builder: fondasi schema. Belum dikerjakan; mulai hanya setelah disetujui pengguna.
