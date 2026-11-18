@@ -20,6 +20,12 @@ class WorkspaceMember extends Model
     /** @use HasFactory<WorkspaceMemberFactory> */
     use HasFactory;
 
+    /** @return array<string, string> */
+    protected function casts(): array
+    {
+        return ['user_id' => 'integer'];
+    }
+
     /** @return BelongsTo<Workspace, $this> */
     public function workspace(): BelongsTo
     {

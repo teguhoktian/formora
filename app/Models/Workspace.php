@@ -20,6 +20,10 @@ class Workspace extends Model
     /** @use HasFactory<WorkspaceFactory> */
     use HasFactory, HasUuids;
 
+    protected $keyType = 'string';
+
+    public $incrementing = false;
+
     /** @return HasMany<WorkspaceMember, $this> */
     public function workspaceMembers(): HasMany
     {

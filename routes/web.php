@@ -1,11 +1,19 @@
 <?php
 
+use App\Http\Controllers\WorkspaceController;
 use Illuminate\Support\Facades\Route;
 
 Route::view('/', 'welcome')->name('home');
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::view('dashboard', 'dashboard')->name('dashboard');
+
+    Route::post('workspaces', [WorkspaceController::class, 'store'])->name('workspaces.store');
+    Route::post('workspaces/switch', [WorkspaceController::class, 'switch'])->name('workspaces.switch');
+    Route::post('workspaces/{workspace}/members', [WorkspaceController::class, 'storeMember'])->name('workspaces.members.store');
+    Route::patch('workspaces/{workspace}/members/{member}', [WorkspaceController::class, 'updateMember'])->name('workspaces.members.update');
+    Route::delete('workspaces/{workspace}/members/{member}', [WorkspaceController::class, 'destroyMember'])->name('workspaces.members.destroy');
+    Route::post('workspaces/{workspace}/ownership', [WorkspaceController::class, 'transferOwnership'])->name('workspaces.ownership.transfer');
 });
 
 require __DIR__.'/settings.php';

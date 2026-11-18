@@ -2,8 +2,8 @@
 
 ## Tahap aktif
 
-Tahap 2 — Fondasi database dan model selesai; menunggu persetujuan pengguna
-sebelum Tahap 3.
+Tahap 3 — Autentikasi dan workspace selesai; menunggu persetujuan pengguna
+sebelum Tahap 4.
 
 ## Hasil Tahap 0
 
@@ -84,10 +84,29 @@ Status: selesai, menunggu persetujuan Tahap 3.
 - Policy, isolasi workspace pada operasi aplikasi, serta aturan lifecycle anggota dikerjakan pada Tahap 3; constraint database saat ini sudah melindungi pasangan workspace/form submission.
 - Retention, penghapusan terkontrol, dan review kebijakan audit tetap menjadi pekerjaan hardening.
 
+## Tahap 3 — Autentikasi dan workspace
+
+Status: selesai, menunggu persetujuan Tahap 4.
+
+- Alur register/login/logout/reset password dan profil tetap menggunakan starter kit Fortify/Livewire.
+- Registrasi membuat user, workspace personal, dan membership owner dalam satu transaksi.
+- Pengguna terautentikasi dapat membuat workspace tambahan; pemilihan workspace hanya menerima workspace yang memiliki membership.
+- Middleware web menyelesaikan workspace aktif dari session dan memeriksa ulang membership pada setiap request.
+- Menambahkan endpoint pengelolaan anggota: tambah anggota yang sudah terdaftar, ubah role admin/member/viewer, hapus anggota, dan transfer ownership. Owner hanya dapat dihapus setelah transfer; role owner tidak dapat ditetapkan lewat endpoint role biasa.
+- Policies membatasi akses workspace, form, dan anggota menurut membership serta role. Viewer hanya dapat melihat form; member tidak dapat mengelola anggota; admin/owner dapat mengelola anggota.
+- Tidak ada perubahan schema atau migrasi database pada tahap ini; data PostgreSQL yang sudah ada tidak diubah.
+
+### Validasi Tahap 3
+
+- `composer test --no-interaction` — lulus; Pint dan PHPStan lulus, 54 test / 138 assertion lulus.
+- Tes keamanan mencakup isolasi workspace/form, penolakan workspace ID milik user lain, batas viewer/member, serta transfer ownership sebelum menghapus owner.
+- `npm run build` — lulus; Vite mencatat bahwa fallback font opsional membutuhkan paket `fontaine`, sama seperti build sebelumnya.
+- `git diff --check` — lulus.
+
 ## Backlog / keputusan tertunda
 
 - Domain final, identitas visual, batas paket, provider object storage/email/pembayaran, kebijakan retensi, role organisasi, sumber data referensi, dan ketentuan legal template dicatat di `docs/IMPLEMENTATION_PLAN.md` dan ditanyakan saat relevan.
 
 ## Tahap berikutnya
 
-Tahap 3 — Autentikasi dan workspace. Belum dikerjakan; mulai hanya setelah disetujui pengguna.
+Tahap 4 — Dashboard custom. Belum dikerjakan; mulai hanya setelah disetujui pengguna.

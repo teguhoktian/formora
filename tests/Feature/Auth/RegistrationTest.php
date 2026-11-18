@@ -37,5 +37,10 @@ class RegistrationTest extends TestCase
             ->assertRedirect(route('dashboard', absolute: false));
 
         $this->assertAuthenticated();
+
+        $user = auth()->user();
+        $this->assertSame(1, $user->workspaces()->count());
+        $this->assertSame('owner', $user->workspaces()->firstOrFail()->pivot->role);
+        $this->assertDatabaseHas('workspaces', ['name' => 'Ruang kerja John Doe']);
     }
 }
