@@ -2,6 +2,7 @@
 
 namespace App\Livewire;
 
+use App\Models\Form;
 use App\Services\CurrentWorkspace;
 use Illuminate\Contracts\View\View;
 use Livewire\Component;
@@ -15,6 +16,7 @@ class DashboardOverview extends Component
 
         return view('livewire.dashboard-overview', [
             'workspace' => $workspace,
+            'canCreateForm' => $workspace !== null && $user->can('create', [Form::class, $workspace]),
             'formCount' => $workspace?->forms()->count() ?? 0,
             'publishedCount' => $workspace?->forms()->where('status', 'published')->count() ?? 0,
             'submissionCount' => $workspace?->submissions()->count() ?? 0,

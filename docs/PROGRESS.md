@@ -2,8 +2,8 @@
 
 ## Tahap aktif
 
-Tahap 4 — Dashboard custom selesai; menunggu persetujuan pengguna sebelum
-Tahap 5.
+Tahap 5 — Form Builder: fondasi schema selesai; menunggu persetujuan pengguna
+sebelum Tahap 6.
 
 ## Hasil Tahap 0
 
@@ -105,13 +105,14 @@ Status: selesai.
 
 ## Tahap 4 — Dashboard custom
 
-Status: selesai, menunggu persetujuan pengguna sebelum Tahap 5.
+Status: selesai.
 
 - Mengganti dashboard placeholder dengan overview Formora berbahasa Indonesia dalam layout sidebar responsif yang konsisten dengan halaman pengaturan.
 - Menampilkan workspace aktif, jumlah form, jumlah form terpublikasi, total respons, form terbaru, respons terbaru, dan aktivitas terakhir dari database workspace aktif.
 - Pengalih workspace berfungsi di sidebar; form pembuatan workspace tersedia di dashboard. Form dan respons lain tidak ikut terbaca lintas workspace.
 - Empty state, indikator pembaruan Livewire berkala, pesan validasi workspace, label aksesibilitas, dan menu responsif ditambahkan.
 - Navigasi menuju ringkasan, form, respons, workspace, dan pengaturan berfungsi. Template, Smart Fields, dan analitik ditandai “Segera hadir”; CTA pembuatan form dinonaktifkan sampai Form Builder tersedia.
+- Setelah Form Builder tersedia pada Tahap 5, CTA pembuatan form diarahkan ke daftar form dan hanya tampil bagi role yang boleh membuat form.
 
 ### Validasi Tahap 4
 
@@ -120,10 +121,28 @@ Status: selesai, menunggu persetujuan pengguna sebelum Tahap 5.
 - `npm run build` — lulus; Vite mencatat bahwa fallback font opsional membutuhkan paket `fontaine`.
 - `git diff --check` — lulus.
 
+## Tahap 5 — Form Builder: fondasi schema
+
+Status: selesai; menunggu persetujuan pengguna sebelum Tahap 6.
+
+- Menambahkan daftar dan pembuatan form dalam workspace aktif, serta halaman edit yang hanya dapat dibuka anggota workspace dengan izin update. Workspace ID dari request tidak dipercaya.
+- Membuat draft schema JSON berversi dengan UUID stabil untuk halaman dan field. Validasi backend membatasi tipe field ke text, textarea, email, phone, number, date, select, radio, checkbox, dan file; nama field unik tanpa membedakan kapitalisasi.
+- Menambahkan builder Livewire dengan tab Build, Design, Logic, Settings, dan Preview; toolbox, canvas, inspector, tambah/hapus/duplikasi field, tambah/hapus halaman, edit pengaturan, dan autosave draft.
+- Reorder menggunakan SortableJS dan mengirim urutan UUID sekali setelah drop; server memverifikasi semua ID cocok dengan field pada halaman sebelum menyimpan.
+- Draft baru dibuat dari schema default. Jika form hanya memiliki versi published, builder membuat draft baru dari schema tersebut dan tidak mengubah versi published.
+- Tidak ada migrasi database pada tahap ini; struktur JSONB yang ada digunakan. Publishing dan versi immutable tetap untuk Tahap 6.
+
+### Validasi Tahap 5
+
+- `vendor/bin/pint --parallel` — lulus.
+- `composer test --no-interaction` — lulus; PHPStan 0 error, 69 test / 174 assertion lulus. Cakupan baru menguji validasi schema, autosave/reload, reorder UUID, duplikasi/halaman, role, dan isolasi workspace.
+- `npm run build` — lulus dengan Vite; fallback font opsional memberi peringatan `fontaine`.
+- `git diff --check` — lulus.
+
 ## Backlog / keputusan tertunda
 
 - Domain final, identitas visual, batas paket, provider object storage/email/pembayaran, kebijakan retensi, role organisasi, sumber data referensi, dan ketentuan legal template dicatat di `docs/IMPLEMENTATION_PLAN.md` dan ditanyakan saat relevan.
 
 ## Tahap berikutnya
 
-Tahap 5 — Form Builder: fondasi schema. Belum dikerjakan; mulai hanya setelah disetujui pengguna.
+Tahap 6 — Publishing dan lifecycle immutable form. Belum dikerjakan; mulai hanya setelah disetujui pengguna.

@@ -8,9 +8,9 @@
             </div>
             <div class="flex items-center gap-3">
                 <span wire:loading class="text-xs text-slate-500" role="status">Memperbarui data…</span>
-                <button type="button" disabled title="Segera hadir" class="inline-flex cursor-not-allowed items-center gap-2 rounded-xl bg-slate-200 px-4 py-2.5 text-sm font-semibold text-slate-500">
-                    <span aria-hidden="true">＋</span> Buat form <span class="rounded-full bg-white/70 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide">Segera hadir</span>
-                </button>
+                @if ($canCreateForm)
+                    <a href="{{ route('forms.index') }}" class="inline-flex items-center gap-2 rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2"><span aria-hidden="true">＋</span> Buat form</a>
+                @endif
             </div>
         </div>
 
@@ -54,7 +54,10 @@
                         <ul class="divide-y divide-slate-100">
                             @foreach ($recentForms as $form)
                                 <li class="flex items-center justify-between gap-4 px-5 py-4 sm:px-6">
-                                    <div class="min-w-0"><p class="truncate text-sm font-medium text-slate-900">{{ $form->title }}</p><p class="mt-1 text-xs text-slate-500">Diperbarui {{ $form->updated_at?->format('d/m/Y') }}</p></div>
+                                    <div class="min-w-0">
+                                        @can('update', $form)<a href="{{ route('forms.edit', $form) }}" class="truncate text-sm font-medium text-slate-900 hover:text-emerald-800">{{ $form->title }}</a>@else<p class="truncate text-sm font-medium text-slate-900">{{ $form->title }}</p>@endcan
+                                        <p class="mt-1 text-xs text-slate-500">Diperbarui {{ $form->updated_at?->format('d/m/Y') }}</p>
+                                    </div>
                                     <span @class([
                                         'shrink-0 rounded-full px-2.5 py-1 text-xs font-medium',
                                         'bg-emerald-50 text-emerald-700' => $form->status === 'published',

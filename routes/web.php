@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\FormController;
 use App\Http\Controllers\WorkspaceController;
 use Illuminate\Support\Facades\Route;
 
@@ -7,6 +8,10 @@ Route::view('/', 'welcome')->name('home');
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::view('dashboard', 'dashboard')->name('dashboard');
+
+    Route::get('forms', [FormController::class, 'index'])->name('forms.index');
+    Route::post('forms', [FormController::class, 'store'])->name('forms.store');
+    Route::get('forms/{form}/edit', [FormController::class, 'edit'])->name('forms.edit');
 
     Route::post('workspaces', [WorkspaceController::class, 'store'])->name('workspaces.store');
     Route::post('workspaces/switch', [WorkspaceController::class, 'switch'])->name('workspaces.switch');

@@ -35,7 +35,7 @@
                     <flux:sidebar.item icon="layout-grid" :href="route('dashboard')" :current="request()->routeIs('dashboard')" wire:navigate>
                         Ringkasan
                     </flux:sidebar.item>
-                    <flux:sidebar.item icon="document-text" href="{{ route('dashboard') }}#my-forms" wire:navigate>
+                    <flux:sidebar.item icon="document-text" :href="route('forms.index')" :current="request()->routeIs('forms.*')" wire:navigate>
                         Form saya
                     </flux:sidebar.item>
                     <flux:sidebar.item icon="inbox" href="{{ route('dashboard') }}#submissions" wire:navigate>
