@@ -13,3 +13,7 @@
 
 @vite(['resources/css/app.css', 'resources/js/app.js'])
 @fluxAppearance
+<script>
+    // Product surfaces currently use a light palette; keep Flux controls in sync with it.
+    window.Flux?.applyAppearance('light');
+</script>

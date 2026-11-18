@@ -53,10 +53,10 @@ new class extends Component {
     <div class="px-6 space-y-2">
         <div class="flex items-center gap-2">
             <flux:icon.lock-closed variant="outline" class="size-4"/>
-            <flux:heading size="lg" level="3">{{ __('2FA recovery codes') }}</flux:heading>
+            <flux:heading size="lg" level="3">Kode pemulihan autentikasi</flux:heading>
         </div>
         <flux:text variant="subtle">
-            {{ __('Recovery codes let you regain access if you lose your 2FA device. Store them in a secure password manager.') }}
+            Kode pemulihan dapat digunakan jika perangkat autentikator Anda hilang. Simpan kode ini di pengelola kata sandi yang aman.
         </flux:text>
     </div>
 
@@ -72,7 +72,7 @@ new class extends Component {
                 aria-expanded="false"
                 aria-controls="recovery-codes-section"
             >
-                {{ __('View recovery codes') }}
+                Lihat kode pemulihan
             </flux:button>
 
             <flux:button
@@ -84,7 +84,7 @@ new class extends Component {
                 aria-expanded="true"
                 aria-controls="recovery-codes-section"
             >
-                {{ __('Hide recovery codes') }}
+                Sembunyikan kode pemulihan
             </flux:button>
 
             @if (filled($recoveryCodes))
@@ -94,7 +94,7 @@ new class extends Component {
                     variant="filled"
                     wire:click="regenerateRecoveryCodes"
                 >
-                    {{ __('Regenerate codes') }}
+                    Buat ulang kode
                 </flux:button>
             @endif
         </div>
@@ -115,7 +115,7 @@ new class extends Component {
                     <div
                         class="grid gap-1 p-4 font-mono text-sm rounded-lg bg-zinc-100 dark:bg-white/5"
                         role="list"
-                        aria-label="{{ __('Recovery codes') }}"
+                        aria-label="Kode pemulihan"
                     >
                         @foreach($recoveryCodes as $code)
                             <div
@@ -128,7 +128,7 @@ new class extends Component {
                         @endforeach
                     </div>
                     <flux:text variant="subtle" class="text-xs">
-                        {{ __('Each recovery code can be used once to access your account and will be removed after use. If you need more, click Regenerate codes above.') }}
+                        Setiap kode hanya dapat digunakan sekali dan akan dihapus setelah digunakan. Buat ulang kode jika Anda membutuhkan kode baru.
                     </flux:text>
                 @endif
             </div>

@@ -1,7 +1,7 @@
 <x-layouts::app :title="$template->title">
     <div class="min-h-screen bg-[#f7f8fa] px-4 py-6 sm:px-6 lg:px-10 lg:py-9">
         <div class="mx-auto max-w-5xl space-y-6">
-            <a href="{{ route('templates.index') }}" class="text-sm font-medium text-emerald-700 hover:text-emerald-800">← Template Library</a>
+            <div class="flex items-center gap-2 text-xs font-medium text-slate-400"><a href="{{ route('templates.index') }}" class="text-emerald-800 hover:text-emerald-900">Template</a><span aria-hidden="true">/</span><span class="truncate text-slate-500">{{ $template->title }}</span></div>
             @if (session('status'))
                 <p class="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800" role="status">{{ session('status') }}</p>
             @endif
@@ -9,7 +9,7 @@
                 <div class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800" role="alert">{{ $errors->first() }}</div>
             @endif
 
-            <header class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+            <header class="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-[0_2px_12px_-8px_rgba(15,23,42,0.15)] sm:p-8">
                 <div class="flex flex-col justify-between gap-5 sm:flex-row sm:items-start">
                     <div>
                         <div class="flex flex-wrap items-center gap-2">
@@ -19,14 +19,14 @@
                                 <span class="rounded-full bg-amber-50 px-2.5 py-1 text-xs font-medium text-amber-800">{{ match ($template->status) { 'pending' => 'Menunggu moderasi', 'rejected' => 'Perlu diperbaiki', 'archived' => 'Diarsipkan', default => 'Draf' } }}</span>
                             @endif
                         </div>
-                        <h1 class="mt-4 text-3xl font-semibold tracking-tight text-slate-950">{{ $template->title }}</h1>
+                        <h1 class="mt-4 text-3xl font-semibold tracking-[-0.035em] text-slate-950">{{ $template->title }}</h1>
                         <p class="mt-2 max-w-3xl text-sm leading-6 text-slate-500">{{ $template->description ?: 'Preview struktur form dari template ini.' }}</p>
                         <p class="mt-3 text-xs text-slate-400">Versi {{ $template->latestVersion?->version_number ?? '—' }} · Kategori {{ $template->category }}</p>
                     </div>
                     @if ($canUse)
                         <form method="POST" action="{{ route('templates.use', $template->slug) }}" class="shrink-0">
                             @csrf
-                            <button type="submit" class="w-full rounded-xl bg-emerald-700 px-5 py-3 text-sm font-semibold text-white hover:bg-emerald-800 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2">Gunakan template</button>
+                    <button type="submit" class="w-full rounded-xl bg-emerald-700 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-800 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2">Gunakan template <span aria-hidden="true">→</span></button>
                         </form>
                     @endif
                 </div>
@@ -35,7 +35,7 @@
                 @endif
             </header>
 
-            <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8" aria-labelledby="template-preview-title">
+            <section class="rounded-2xl border border-slate-200/80 bg-white p-6 shadow-[0_2px_12px_-8px_rgba(15,23,42,0.15)] sm:p-8" aria-labelledby="template-preview-title">
                 <div class="flex items-end justify-between gap-4 border-b border-slate-100 pb-4">
                     <div>
                         <h2 id="template-preview-title" class="text-lg font-semibold text-slate-950">Preview struktur form</h2>

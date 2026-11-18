@@ -1,21 +1,16 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="dark">
+<html lang="id">
     <head>
         @include('partials.head')
     </head>
-    <body class="min-h-screen bg-white antialiased dark:bg-linear-to-b dark:from-neutral-950 dark:to-neutral-900">
-        <div class="bg-background flex min-h-svh flex-col items-center justify-center gap-6 p-6 md:p-10">
-            <div class="flex w-full max-w-sm flex-col gap-2">
-                <a href="{{ route('home') }}" class="flex flex-col items-center gap-2 font-medium" wire:navigate>
-                    <span class="flex h-9 w-9 mb-1 items-center justify-center rounded-md">
-                        <x-app-logo-icon class="size-9 fill-current text-black dark:text-white" />
-                    </span>
-                    <span class="sr-only">{{ config('app.name', 'Laravel') }}</span>
-                </a>
-                <div class="flex flex-col gap-6">
-                    {{ $slot }}
-                </div>
-            </div>
+    <body class="min-h-screen bg-[#f7f8fa] text-slate-900 antialiased">
+        <div class="relative isolate flex min-h-svh flex-col items-center justify-center overflow-hidden px-5 py-10 sm:px-8">
+            <div class="pointer-events-none absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_50%_0%,rgba(16,185,129,0.10),transparent_42%)]" aria-hidden="true"></div>
+            <x-app-logo href="{{ route('home') }}" class="mb-7" wire:navigate />
+            <main class="w-full max-w-md rounded-2xl border border-slate-200/80 bg-white p-6 shadow-[0_18px_60px_-32px_rgba(15,23,42,0.28)] sm:p-9">
+                {{ $slot }}
+            </main>
+            <p class="mt-6 text-center text-xs text-slate-500">Baca <a href="{{ route('privacy') }}" class="font-medium text-emerald-800 underline underline-offset-2">pemberitahuan privasi Formora</a>.</p>
         </div>
 
         @persist('toast')

@@ -1,11 +1,8 @@
 <x-layouts::app :title="__('Moderasi template komunitas')">
     <div class="min-h-screen bg-[#f7f8fa] px-4 py-6 sm:px-6 lg:px-10 lg:py-9">
         <div class="mx-auto max-w-6xl space-y-6">
-            <a href="{{ route('templates.index') }}" class="text-sm font-medium text-emerald-700 hover:text-emerald-800">← Template Library</a>
-            <header>
-                <h1 class="text-3xl font-semibold tracking-tight text-slate-950">Moderasi komunitas</h1>
-                <p class="mt-2 text-sm text-slate-500">Periksa preview dan struktur form sebelum template komunitas ditampilkan.</p>
-            </header>
+            <div class="flex items-center gap-2 text-xs font-medium text-slate-400"><a href="{{ route('templates.index') }}" class="text-emerald-800 hover:text-emerald-900">Template</a><span aria-hidden="true">/</span><span>Moderasi</span></div>
+            <x-page-header eyebrow="Pustaka template" title="Moderasi komunitas" description="Periksa struktur form sebelum template komunitas ditampilkan." />
             @if (session('status'))
                 <p class="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800" role="status">{{ session('status') }}</p>
             @endif
@@ -13,7 +10,7 @@
             @if ($templates->isNotEmpty())
                 <div class="space-y-4">
                     @foreach ($templates as $template)
-                        <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
+                        <article class="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-[0_2px_12px_-8px_rgba(15,23,42,0.15)] sm:p-6">
                             <div class="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
                                 <div>
                                     <p class="text-xs font-semibold uppercase tracking-wide text-emerald-700">{{ $template->category }} · {{ $template->workspace?->name }}</p>
@@ -26,7 +23,7 @@
                             <div class="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
                                 @foreach ($template->latestVersion?->schema['pages'] ?? [] as $page)
                                     @foreach ($page['fields'] as $field)
-                                        <div class="rounded-lg bg-slate-50 px-3.5 py-3">
+                                            <div class="rounded-lg border border-slate-100 bg-slate-50/80 px-3.5 py-3">
                                             <p class="text-sm font-medium text-slate-800">{{ $field['label'] }}</p>
                                             <p class="mt-1 text-xs text-slate-500">{{ $field['type'] }}{{ $field['required'] ? ' · Wajib' : '' }}</p>
                                         </div>

@@ -2,16 +2,15 @@
     'sidebar' => false,
 ])
 
-@if($sidebar)
-    <flux:sidebar.brand :name="'Formora'" {{ $attributes }}>
-        <x-slot name="logo" class="flex aspect-square size-8 items-center justify-center rounded-md bg-accent-content text-accent-foreground">
-            <x-app-logo-icon class="size-5 fill-current text-white dark:text-black" />
-        </x-slot>
-    </flux:sidebar.brand>
-@else
-    <flux:brand :name="'Formora'" {{ $attributes }}>
-        <x-slot name="logo" class="flex aspect-square size-8 items-center justify-center rounded-md bg-accent-content text-accent-foreground">
-            <x-app-logo-icon class="size-5 fill-current text-white dark:text-black" />
-        </x-slot>
-    </flux:brand>
-@endif
+<a {{ $attributes->class(['flex min-w-0 items-center gap-2.5', 'w-full' => $sidebar]) }}>
+    <span class="grid size-9 shrink-0 place-items-center rounded-xl bg-slate-950 text-emerald-300 shadow-sm">
+        <x-app-logo-icon class="size-5" />
+    </span>
+    <span @class([
+        'truncate font-bold tracking-tight text-slate-950',
+        'text-lg' => $sidebar,
+        'text-xl' => ! $sidebar,
+    ])>
+        Formora<span class="text-emerald-600">.</span>
+    </span>
+</a>

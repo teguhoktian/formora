@@ -4,34 +4,34 @@
         @include('partials.head')
     </head>
     <body class="min-h-screen bg-[#f7f8fa] text-slate-900 antialiased">
-        <flux:sidebar sticky collapsible="mobile" class="border-e border-slate-200 bg-white">
+        <flux:sidebar sticky collapsible="mobile" class="border-e border-slate-200/80 bg-white shadow-[4px_0_24px_-20px_rgba(15,23,42,0.2)]">
             <flux:sidebar.header>
                 <x-app-logo :sidebar="true" href="{{ route('dashboard') }}" wire:navigate />
                 <flux:sidebar.collapse class="lg:hidden" />
             </flux:sidebar.header>
 
-            <div class="mx-3 mt-3 rounded-xl border border-slate-200 bg-slate-50 p-3">
-                <p class="mb-2 text-[11px] font-semibold uppercase tracking-wider text-slate-500">Workspace aktif</p>
+            <div class="mx-3 mt-4 rounded-xl border border-slate-200 bg-slate-50/80 p-3">
+                <p class="mb-2 text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500">Workspace aktif</p>
                 @php($workspaces = auth()->user()->workspaces()->orderBy('name')->get())
                 @php($activeWorkspace = request()->attributes->get('currentWorkspace'))
                 @if ($workspaces->isNotEmpty())
                     <form method="POST" action="{{ route('workspaces.switch') }}" class="space-y-2">
                         @csrf
                         <label for="active-workspace" class="sr-only">Pilih workspace</label>
-                        <select id="active-workspace" name="workspace_id" class="w-full rounded-lg border border-slate-200 bg-white px-2.5 py-2 text-sm font-medium text-slate-800 focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/20">
+                        <select id="active-workspace" name="workspace_id" class="w-full rounded-lg border border-slate-200 bg-white px-3 py-2.5 text-sm font-semibold text-slate-800 shadow-sm focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/20">
                             @foreach ($workspaces as $workspaceOption)
                                 <option value="{{ $workspaceOption->id }}" @selected($activeWorkspace?->id === $workspaceOption->id)>{{ $workspaceOption->name }}</option>
                             @endforeach
                         </select>
-                        <button type="submit" class="w-full rounded-lg px-2.5 py-1.5 text-left text-xs font-semibold text-emerald-800 hover:bg-emerald-50 focus:outline-none focus:ring-2 focus:ring-emerald-600">Ganti workspace</button>
+                        <button type="submit" class="mt-1 w-full rounded-lg px-2.5 py-1.5 text-left text-xs font-semibold text-emerald-800 transition hover:bg-emerald-50 focus:outline-none focus:ring-2 focus:ring-emerald-600">Ganti workspace <span aria-hidden="true">→</span></button>
                     </form>
                 @else
                     <p class="text-sm font-medium text-slate-700">Belum ada workspace</p>
                 @endif
             </div>
 
-            <flux:sidebar.nav class="mt-4">
-                <flux:sidebar.group heading="Menu utama" class="grid">
+            <flux:sidebar.nav class="mt-5 px-2">
+                <flux:sidebar.group heading="Workspace" class="grid">
                     <flux:sidebar.item icon="layout-grid" :href="route('dashboard')" :current="request()->routeIs('dashboard')" wire:navigate>
                         Ringkasan
                     </flux:sidebar.item>
@@ -44,19 +44,19 @@
                     <flux:sidebar.item icon="book-open-text" :href="route('templates.index')" :current="request()->routeIs('templates.*')" wire:navigate>
                         Template
                     </flux:sidebar.item>
-                    <div class="mt-1 space-y-1 px-3 text-sm text-slate-400" aria-label="Fitur segera hadir">
-                        <p class="py-2">Smart Fields <span class="float-right text-[10px] uppercase tracking-wide">Segera hadir</span></p>
-                        <p class="py-2">Analitik <span class="float-right text-[10px] uppercase tracking-wide">Segera hadir</span></p>
-                    </div>
                     <flux:sidebar.item icon="building-office-2" href="{{ route('dashboard') }}#workspace" wire:navigate>
                         Workspace
                     </flux:sidebar.item>
+                </flux:sidebar.group>
+                <flux:sidebar.group heading="Akan hadir" class="mt-5 grid" aria-label="Fitur yang sedang disiapkan">
+                    <div class="flex items-center justify-between px-3 py-2 text-sm text-slate-600"><span>Smart Fields</span><span class="rounded bg-slate-100 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-slate-600">Segera</span></div>
+                    <div class="flex items-center justify-between px-3 py-2 text-sm text-slate-600"><span>Analitik</span><span class="rounded bg-slate-100 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-slate-600">Segera</span></div>
                 </flux:sidebar.group>
             </flux:sidebar.nav>
 
             <flux:spacer />
 
-            <flux:sidebar.nav>
+            <flux:sidebar.nav class="px-2">
                 <flux:sidebar.item icon="cog-6-tooth" :href="route('profile.edit')" :current="request()->routeIs('profile.*', 'security.*', 'appearance.*')" wire:navigate>
                     Pengaturan
                 </flux:sidebar.item>
@@ -67,7 +67,7 @@
 
         <flux:header class="border-b border-slate-200 bg-white lg:hidden">
             <flux:sidebar.toggle class="mr-2" icon="bars-2" inset="left" />
-            <span class="text-sm font-semibold text-slate-900">Formora</span>
+            <x-app-logo href="{{ route('dashboard') }}" wire:navigate />
             <flux:spacer />
             <flux:dropdown position="top" align="end">
                 <flux:profile :initials="auth()->user()->initials()" icon-trailing="chevron-down" />

@@ -1,11 +1,11 @@
 <div class="min-h-screen bg-[#f7f8fa]" wire:key="form-builder-{{ $form->id }}">
-    <header class="sticky top-0 z-30 border-b border-slate-200 bg-white/95 backdrop-blur">
+    <header class="sticky top-0 z-30 border-b border-slate-200/80 bg-white/95 shadow-[0_2px_10px_-8px_rgba(15,23,42,0.22)] backdrop-blur">
         <div class="mx-auto flex max-w-[1600px] flex-wrap items-center gap-3 px-4 py-3 sm:px-6">
             <a href="{{ route('forms.index') }}" class="rounded-lg p-2 text-slate-500 hover:bg-slate-100" aria-label="Kembali ke daftar form">←</a>
             <div class="min-w-0 flex-1">
                 <label for="form-title" class="sr-only">Nama form</label>
                 <input id="form-title" type="text" wire:model.live.debounce.700ms="formTitle" maxlength="160" class="w-full max-w-md truncate rounded-lg border border-transparent bg-transparent px-2 py-1 text-sm font-semibold text-slate-900 hover:border-slate-200 focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/20">
-                <p class="px-2 text-[11px] text-slate-400">Draf · belum dipublikasikan</p>
+                <p class="px-2 text-[11px] text-slate-400">Perubahan tersimpan otomatis</p>
             </div>
 
             <div class="flex items-center gap-2 text-xs" aria-live="polite">
@@ -34,7 +34,7 @@
         </div>
 
         <nav class="mx-auto flex max-w-[1600px] items-center gap-1 overflow-x-auto px-4 sm:px-6" aria-label="Tab form builder">
-            @foreach (['build' => 'Build', 'design' => 'Design', 'logic' => 'Logic', 'settings' => 'Settings', 'preview' => 'Preview'] as $tab => $label)
+            @foreach (['build' => 'Bangun', 'design' => 'Desain', 'logic' => 'Logika', 'settings' => 'Pengaturan', 'preview' => 'Pratinjau'] as $tab => $label)
                 @if (in_array($tab, ['build', 'settings', 'preview'], true))
                     <button type="button" wire:click="setTab('{{ $tab }}')" @class([
                         'border-b-2 px-4 py-3 text-sm font-semibold',

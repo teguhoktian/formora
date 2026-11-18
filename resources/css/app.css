@@ -23,9 +23,9 @@
     --color-zinc-900: #171717;
     --color-zinc-950: #0a0a0a;
 
-    --color-accent: var(--color-neutral-800);
-    --color-accent-content: var(--color-neutral-800);
-    --color-accent-foreground: var(--color-white);
+    --color-accent: #047857;
+    --color-accent-content: #065f46;
+    --color-accent-foreground: #ffffff;
 }
 
 @layer theme {

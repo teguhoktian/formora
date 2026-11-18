@@ -1,45 +1,45 @@
-<div class="min-h-screen bg-[#f7f8fa] px-4 py-6 sm:px-6 lg:px-10 lg:py-9" wire:poll.60s>
-    <div class="mx-auto max-w-7xl space-y-8">
+<div class="min-h-screen bg-[#f7f8fa] px-4 py-7 sm:px-6 lg:px-10 lg:py-9" wire:poll.60s>
+    <div class="mx-auto max-w-7xl space-y-7 lg:space-y-8">
         <div class="flex flex-col justify-between gap-5 sm:flex-row sm:items-end">
             <div>
-                <p class="text-sm font-medium text-emerald-700">Ruang kerja Anda</p>
-                <h1 class="mt-2 text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">Ringkasan</h1>
-                <p class="mt-2 text-sm text-slate-500">Pantau form dan respons terbaru dalam satu tempat.</p>
+                <p class="text-xs font-semibold uppercase tracking-[0.14em] text-emerald-700">Ringkasan workspace</p>
+                <h1 class="mt-2 text-3xl font-semibold tracking-[-0.035em] text-slate-950 sm:text-[2rem]">Selamat datang, {{ str(auth()->user()->name)->before(' ') }}</h1>
+                <p class="mt-2 text-sm leading-6 text-slate-500">Pantau formulir dan respons terbaru di {{ $workspace?->name ?? 'ruang kerja Anda' }}.</p>
             </div>
             <div class="flex items-center gap-3">
                 <span wire:loading class="text-xs text-slate-500" role="status">Memperbarui data…</span>
                 @if ($canCreateForm)
-                    <a href="{{ route('forms.index') }}" class="inline-flex items-center gap-2 rounded-xl bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-800 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2"><span aria-hidden="true">＋</span> Buat form</a>
+                    <a href="{{ route('forms.index') }}" class="inline-flex items-center gap-2 rounded-xl bg-emerald-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-800 focus:outline-none focus:ring-2 focus:ring-emerald-600 focus:ring-offset-2"><span aria-hidden="true">＋</span> Buat form</a>
                 @endif
             </div>
         </div>
 
         @if ($workspace)
             <section aria-label="Statistik workspace" class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm shadow-slate-900/[0.02]">
-                    <div class="flex items-center justify-between"><p class="text-sm font-medium text-slate-500">Semua form</p><span class="grid size-9 place-items-center rounded-xl bg-blue-50 text-blue-700" aria-hidden="true">▤</span></div>
-                    <p class="mt-5 text-3xl font-semibold tracking-tight text-slate-950">{{ number_format($formCount) }}</p>
-                    <p class="mt-1 text-xs text-slate-500">Di workspace ini</p>
+                <article class="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-[0_2px_12px_-8px_rgba(15,23,42,0.15)] transition hover:-translate-y-0.5 hover:shadow-md">
+                    <div class="flex items-center justify-between"><p class="text-sm font-medium text-slate-500">Semua form</p><span class="grid size-9 place-items-center rounded-xl bg-indigo-50 text-indigo-700" aria-hidden="true"><svg viewBox="0 0 20 20" class="size-5" fill="none"><rect x="3.25" y="2.5" width="13.5" height="15" rx="2.5" stroke="currentColor" stroke-width="1.5"/><path d="M6.5 7h7M6.5 10h7M6.5 13h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span></div>
+                    <p class="mt-5 text-3xl font-semibold tracking-tight tabular-nums text-slate-950">{{ number_format($formCount) }}</p>
+                    <p class="mt-1 text-xs text-slate-500">Form di workspace ini</p>
                 </article>
-                <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm shadow-slate-900/[0.02]">
-                    <div class="flex items-center justify-between"><p class="text-sm font-medium text-slate-500">Form dipublikasikan</p><span class="grid size-9 place-items-center rounded-xl bg-emerald-50 text-emerald-700" aria-hidden="true">↗</span></div>
-                    <p class="mt-5 text-3xl font-semibold tracking-tight text-slate-950">{{ number_format($publishedCount) }}</p>
+                <article class="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-[0_2px_12px_-8px_rgba(15,23,42,0.15)] transition hover:-translate-y-0.5 hover:shadow-md">
+                    <div class="flex items-center justify-between"><p class="text-sm font-medium text-slate-500">Dipublikasikan</p><span class="grid size-9 place-items-center rounded-xl bg-emerald-50 text-emerald-700" aria-hidden="true"><svg viewBox="0 0 20 20" class="size-5" fill="none"><path d="M5 13.5 14 4.5M6 4.5h8v8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span></div>
+                    <p class="mt-5 text-3xl font-semibold tracking-tight tabular-nums text-slate-950">{{ number_format($publishedCount) }}</p>
                     <p class="mt-1 text-xs text-slate-500">Siap menerima respons</p>
                 </article>
-                <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm shadow-slate-900/[0.02]">
-                    <div class="flex items-center justify-between"><p class="text-sm font-medium text-slate-500">Total respons</p><span class="grid size-9 place-items-center rounded-xl bg-violet-50 text-violet-700" aria-hidden="true">↙</span></div>
-                    <p class="mt-5 text-3xl font-semibold tracking-tight text-slate-950">{{ number_format($submissionCount) }}</p>
-                    <p class="mt-1 text-xs text-slate-500">Terkumpul dari semua form</p>
+                <article class="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-[0_2px_12px_-8px_rgba(15,23,42,0.15)] transition hover:-translate-y-0.5 hover:shadow-md">
+                    <div class="flex items-center justify-between"><p class="text-sm font-medium text-slate-500">Total respons</p><span class="grid size-9 place-items-center rounded-xl bg-violet-50 text-violet-700" aria-hidden="true"><svg viewBox="0 0 20 20" class="size-5" fill="none"><path d="M4.5 5.5h11v9h-6l-3.5 2v-2h-1.5v-9Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/><path d="M7.5 8.5h5M7.5 11h3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span></div>
+                    <p class="mt-5 text-3xl font-semibold tracking-tight tabular-nums text-slate-950">{{ number_format($submissionCount) }}</p>
+                    <p class="mt-1 text-xs text-slate-500">Dari seluruh formulir</p>
                 </article>
-                <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm shadow-slate-900/[0.02]">
-                    <div class="flex items-center justify-between"><p class="text-sm font-medium text-slate-500">Nama workspace</p><span class="grid size-9 place-items-center rounded-xl bg-amber-50 text-amber-700" aria-hidden="true">⌂</span></div>
+                <article class="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-[0_2px_12px_-8px_rgba(15,23,42,0.15)] transition hover:-translate-y-0.5 hover:shadow-md">
+                    <div class="flex items-center justify-between"><p class="text-sm font-medium text-slate-500">Workspace aktif</p><span class="grid size-9 place-items-center rounded-xl bg-amber-50 text-amber-700" aria-hidden="true"><svg viewBox="0 0 20 20" class="size-5" fill="none"><path d="m3 9 7-5.5L17 9v7.5a1 1 0 0 1-1 1h-4.5v-5h-3v5H4a1 1 0 0 1-1-1V9Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></svg></span></div>
                     <p class="mt-5 truncate text-xl font-semibold tracking-tight text-slate-950">{{ $workspace->name }}</p>
-                    <p class="mt-1 text-xs text-slate-500">Workspace aktif</p>
+                    <p class="mt-1 text-xs text-slate-500">Ruang kerja terpilih</p>
                 </article>
             </section>
 
             <div class="grid gap-6 xl:grid-cols-[1.35fr_1fr]">
-                <section id="my-forms" class="scroll-mt-6 rounded-2xl border border-slate-200 bg-white shadow-sm shadow-slate-900/[0.02]" aria-labelledby="forms-heading">
+                <section id="my-forms" class="scroll-mt-6 rounded-2xl border border-slate-200/80 bg-white shadow-[0_2px_12px_-8px_rgba(15,23,42,0.15)]" aria-labelledby="forms-heading">
                     <div class="flex items-center justify-between border-b border-slate-100 px-5 py-4 sm:px-6">
                         <div><h2 id="forms-heading" class="font-semibold text-slate-950">Form terbaru</h2><p class="mt-1 text-xs text-slate-500">Form yang terakhir diperbarui.</p></div>
                         <span class="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-medium text-slate-600">{{ $formCount }} form</span>
@@ -48,7 +48,7 @@
                         <div class="px-6 py-12 text-center">
                             <span class="mx-auto grid size-12 place-items-center rounded-2xl bg-slate-100 text-xl text-slate-500" aria-hidden="true">▤</span>
                             <h3 class="mt-4 text-sm font-semibold text-slate-900">Belum ada form</h3>
-                            <p class="mx-auto mt-1 max-w-sm text-sm leading-6 text-slate-500">Form yang Anda buat akan muncul di sini. Form Builder sedang disiapkan.</p>
+                            <p class="mx-auto mt-1 max-w-sm text-sm leading-6 text-slate-500">Form yang Anda buat akan muncul di sini. Mulai dengan membuat form pertama dari menu Form saya.</p>
                         </div>
                     @else
                         <ul class="divide-y divide-slate-100">
