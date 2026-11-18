@@ -54,6 +54,14 @@ detail dan ekspor, dan audit ekspor hanya menyimpan metadata event.
 Definisi dan perilaku Smart Fields Indonesia didokumentasikan di
 [`docs/SMART_FIELDS.md`](SMART_FIELDS.md).
 
+Template disimpan pada `form_templates` dan snapshot schema immutable pada
+`form_template_versions`. Template workspace selalu membawa `workspace_id`;
+template official menggunakan `workspace_id` null. Status dan visibilitas
+memisahkan draf, pengajuan moderasi, private, unlisted, dan publik. Akun platform
+moderator ditandai dengan `users.is_platform_moderator`; akses operasionalnya
+diberikan operator server lewat `php artisan formora:templates:moderator EMAIL`
+dan dicabut dengan opsi `--revoke`.
+
 Kolom `is_published` dan `published_at` menandai snapshot historis. Pointer
 `published_version_id` memilih versi aktif; status `paused` mempertahankan pointer,
 sedangkan unpublish mengosongkannya tanpa menghapus versi. Versi published tidak
@@ -66,5 +74,6 @@ jalankan `php artisan migrate`. Migration Tahap 2 bersifat aditif. Jangan gunaka
 `migrate:fresh` atau `db:wipe` pada database yang berisi data. Skema/constraint
 diuji oleh `tests/Feature/Database/FormoraSchemaTest.php`.
 
-Seed standar sengaja tidak membuat pengguna atau submission contoh. Gunakan
-factory hanya di test atau lingkungan terisolasi.
+Seed standar sengaja tidak membuat pengguna atau submission contoh. Tiga
+template resmi awal dibuat oleh migration Tahap 10. Gunakan factory hanya di
+test atau lingkungan terisolasi.

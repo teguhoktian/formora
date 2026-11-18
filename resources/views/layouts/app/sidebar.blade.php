@@ -41,8 +41,10 @@
                     <flux:sidebar.item icon="inbox" href="{{ route('dashboard') }}#submissions" wire:navigate>
                         Respons
                     </flux:sidebar.item>
+                    <flux:sidebar.item icon="book-open-text" :href="route('templates.index')" :current="request()->routeIs('templates.*')" wire:navigate>
+                        Template
+                    </flux:sidebar.item>
                     <div class="mt-1 space-y-1 px-3 text-sm text-slate-400" aria-label="Fitur segera hadir">
-                        <p class="py-2">Template <span class="float-right text-[10px] uppercase tracking-wide">Segera hadir</span></p>
                         <p class="py-2">Smart Fields <span class="float-right text-[10px] uppercase tracking-wide">Segera hadir</span></p>
                         <p class="py-2">Analitik <span class="float-right text-[10px] uppercase tracking-wide">Segera hadir</span></p>
                     </div>

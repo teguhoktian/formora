@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\FormController;
+use App\Http\Controllers\FormTemplateController;
 use App\Http\Controllers\PublicFormController;
 use App\Http\Controllers\SubmissionController;
 use App\Http\Controllers\WorkspaceController;
@@ -36,6 +37,15 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('forms/{form}/submissions/exports/{export}', [SubmissionController::class, 'download'])->name('forms.submissions.exports.download');
     Route::get('forms/{form}/submissions/{submission}', [SubmissionController::class, 'show'])->name('forms.submissions.show');
     Route::patch('forms/{form}/submissions/{submission}', [SubmissionController::class, 'update'])->name('forms.submissions.update');
+
+    Route::get('templates', [FormTemplateController::class, 'index'])->name('templates.index');
+    Route::post('templates/from-form', [FormTemplateController::class, 'saveFromForm'])->name('templates.from-form');
+    Route::get('templates/moderation', [FormTemplateController::class, 'moderationQueue'])->name('templates.moderation');
+    Route::post('templates/{slug}/moderation', [FormTemplateController::class, 'moderate'])->name('templates.moderate');
+    Route::get('templates/{slug}', [FormTemplateController::class, 'show'])->name('templates.show');
+    Route::post('templates/{slug}/use', [FormTemplateController::class, 'use'])->name('templates.use');
+    Route::put('templates/{slug}', [FormTemplateController::class, 'update'])->name('templates.update');
+    Route::post('templates/{slug}/versions', [FormTemplateController::class, 'createVersion'])->name('templates.versions.store');
 
     Route::post('workspaces', [WorkspaceController::class, 'store'])->name('workspaces.store');
     Route::post('workspaces/switch', [WorkspaceController::class, 'switch'])->name('workspaces.switch');

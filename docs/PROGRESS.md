@@ -2,8 +2,8 @@
 
 ## Tahap aktif
 
-Tahap 9 — Smart Fields Indonesia selesai; menunggu persetujuan pengguna sebelum
-Tahap 10.
+Tahap 10 — Template Library selesai; menunggu persetujuan pengguna sebelum
+Tahap 11.
 
 ## Hasil Tahap 0
 
@@ -224,4 +224,27 @@ nama wilayah dari kode yang disimpan.
 
 ## Tahap berikutnya
 
-Tahap 10 — Template Library. Belum dikerjakan; mulai hanya setelah disetujui pengguna.
+## Tahap 10 — Template Library
+
+Status: selesai; menunggu persetujuan pengguna sebelum Tahap 11.
+
+- Menyediakan kategori, pencarian judul/deskripsi, preview schema, tiga template resmi awal (pendaftaran kegiatan, survei kepuasan, permintaan informasi), dan kartu template komunitas yang telah disetujui.
+- Anggota yang boleh mengedit form dapat menyimpan schema sebagai template workspace privat. Template dapat diatur private, unlisted, atau public; pengajuan public masuk antrean moderasi dan baru tampil setelah moderator platform menyetujui.
+- Menambahkan salinan form dari template dengan ID halaman/field baru agar schema salinan dapat diedit tanpa mengubah sumber. Versi template mengambil snapshot dari form workspace; snapshot lama tidak dapat diedit/dihapus melalui model.
+- Akses template dibatasi berdasarkan visibilitas dan workspace. Role viewer tidak dapat menyimpan atau memakai template untuk membuat form. Akses moderator platform dapat diberikan/dicabut operator server lewat `php artisan formora:templates:moderator EMAIL [--revoke]`.
+- Migration `2026_11_18_000011_create_form_templates_tables` diterapkan ke PostgreSQL lokal. Tiga template resmi dimasukkan melalui migration; tidak ada data user/submission contoh yang dibuat.
+
+### Validasi Tahap 10
+
+- `php artisan test --compact tests/Feature/TemplateLibraryTest.php` — lulus, 7 test / 50 assertion.
+- `composer test --no-interaction` — lulus; Pint lulus, PHPStan 0 error, 101 test / 392 assertion.
+- `npm run build` — lulus dengan peringatan opsional font fallback `fontaine`.
+- `php artisan migrate --force --no-ansi` dan `php artisan migrate:status --no-ansi` — migration Tahap 10 berstatus Ran pada PostgreSQL lokal.
+- Smoke test PostgreSQL — tiga template resmi terbaca dan seluruh snapshot schema lolos `FormSchemaService`.
+- `git diff --check` — lulus.
+
+**Berhenti setelah tahap 10.**
+
+## Tahap berikutnya
+
+Tahap 11 — Hardening MVP. Belum dikerjakan; mulai hanya setelah disetujui pengguna.

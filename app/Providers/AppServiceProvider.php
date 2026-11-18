@@ -3,9 +3,11 @@
 namespace App\Providers;
 
 use App\Models\Form;
+use App\Models\FormTemplate;
 use App\Models\Workspace;
 use App\Models\WorkspaceMember;
 use App\Policies\FormPolicy;
+use App\Policies\FormTemplatePolicy;
 use App\Policies\WorkspaceMemberPolicy;
 use App\Policies\WorkspacePolicy;
 use Carbon\CarbonImmutable;
@@ -41,6 +43,7 @@ class AppServiceProvider extends ServiceProvider
         Gate::policy(Workspace::class, WorkspacePolicy::class);
         Gate::policy(WorkspaceMember::class, WorkspaceMemberPolicy::class);
         Gate::policy(Form::class, FormPolicy::class);
+        Gate::policy(FormTemplate::class, FormTemplatePolicy::class);
 
         Date::use(CarbonImmutable::class);
 
