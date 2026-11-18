@@ -7,6 +7,7 @@ use App\Services\CurrentWorkspace;
 use App\Services\FormBuilderService;
 use App\Services\FormPublishingService;
 use App\Services\FormSchemaService;
+use App\Services\SmartFieldRegistry;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Log;
@@ -318,6 +319,7 @@ class FormBuilder extends Component
             'activePage' => $schema['pages'][$pageIndex],
             'selectedField' => $this->selectedField($schema),
             'fieldTypes' => FormSchemaService::FIELD_TYPES,
+            'smartFieldDefinitions' => app(SmartFieldRegistry::class)->definitions(),
             'canPublish' => auth()->user()?->can('publish', $form) ?? false,
             'draftId' => $draftId,
             'publicUrl' => $form->slug === null ? null : route('public.forms.show', $form->slug),

@@ -9,7 +9,7 @@ use Illuminate\Validation\Rule;
 class FormSchemaService
 {
     /** @var list<string> */
-    public const FIELD_TYPES = ['text', 'textarea', 'email', 'phone', 'number', 'date', 'select', 'radio', 'checkbox', 'file'];
+    public const FIELD_TYPES = ['text', 'textarea', 'email', 'phone', 'number', 'date', 'select', 'radio', 'checkbox', 'file', ...SmartFieldRegistry::TYPES];
 
     /** @return array<string, mixed> */
     public function empty(): array
@@ -49,13 +49,14 @@ class FormSchemaService
             'phone' => 'Telepon', 'number' => 'Angka', 'date' => 'Tanggal',
             'select' => 'Pilihan', 'radio' => 'Pilihan tunggal', 'checkbox' => 'Kotak centang', 'file' => 'Unggah file',
         ];
+        $smartDefinition = app(SmartFieldRegistry::class)->definition($type);
         $nameBase = 'field_'.str_replace('-', '', Str::substr($id, 0, 8));
 
         return [
             'id' => $id,
             'type' => $type,
             'name' => $this->uniqueName($schema, $nameBase),
-            'label' => $labels[$type],
+            'label' => $smartDefinition['label'] ?? ($labels[$type] ?? $type),
             'required' => false,
             'help_text' => null,
             'default_value' => null,

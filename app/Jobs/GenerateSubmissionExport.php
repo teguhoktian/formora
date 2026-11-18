@@ -73,7 +73,7 @@ class GenerateSubmissionExport implements ShouldQueue
                             continue;
                         }
                         $label = $fields[$name]['label'] ?? $columns[$name];
-                        $row[$fieldIndexes[$name] + 3] = $presenter->mask((string) $name, $label, $value);
+                        $row[$fieldIndexes[$name] + 3] = $presenter->mask((string) $name, $label, $value, $fields[$name]['type'] ?? null);
                     }
                     fputcsv($stream, array_map($this->safeCsvCell(...), $row));
                 }

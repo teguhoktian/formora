@@ -2,8 +2,8 @@
 
 ## Tahap aktif
 
-Tahap 8 — Submission management selesai; menunggu persetujuan pengguna sebelum
-Tahap 9.
+Tahap 9 — Smart Fields Indonesia selesai; menunggu persetujuan pengguna sebelum
+Tahap 10.
 
 ## Hasil Tahap 0
 
@@ -183,7 +183,7 @@ Status: selesai.
 
 ## Tahap 8 — Submission management
 
-Status: selesai; menunggu persetujuan pengguna sebelum Tahap 9.
+Status: selesai.
 
 - Menambahkan daftar respons per form dengan pagination 25 item, pencarian jawaban/referensi, filter status dan tanggal, serta detail respons. Query daftar dibatasi ke kolom yang ditampilkan dan seluruh akses dibatasi workspace aktif.
 - Detail dan CSV memasking field yang terindikasi sensitif (termasuk NIK, NPWP, rekening, token, kata sandi) dan tidak menampilkan path file privat. Nilai input yang dapat menjadi formula spreadsheet dinetralkan pada CSV.
@@ -200,6 +200,28 @@ Status: selesai; menunggu persetujuan pengguna sebelum Tahap 9.
 
 **Berhenti setelah tahap 8.**
 
+## Tahap 9 — Smart Fields Indonesia
+
+Status: selesai; menunggu persetujuan pengguna sebelum Tahap 10.
+
+- Menambahkan registry tunggal untuk 12 field: NIK, NPWP, tanggal lahir, rekening, nama bank, Rupiah, telepon Indonesia, alamat bertingkat, NIP, NISN, NUPTK, dan NIM. Registry menjadi sumber ID, label, toolbox control, input renderer, rules, normalisasi, formatting, dan klasifikasi masking.
+- Smart fields tersedia di builder serta renderer publik. Input NIK, NPWP, rekening, NIP, NISN, dan NUPTK langsung menyaring karakter nonangka; backend tetap memvalidasi format dari registry, menyimpan nomor sebagai string untuk mempertahankan nol awal, menormalisasi separator NPWP/rekening/telepon, dan menampilkan pesan validasi berbahasa Indonesia pada field yang salah.
+- NIK, NPWP, rekening, tanggal lahir, telepon, NIP, NISN, NUPTK, dan NIM dimasking pada detail serta CSV. Nominal Rupiah diformat; alamat ditampilkan menurut tingkat wilayah. Tidak ada lookup atau klaim verifikasi ke instansi.
+- Alamat menyediakan pilihan berjenjang provinsi → kabupaten/kota → kecamatan → desa/kelurahan. Keempat tingkat memakai kode snapshot wilayah lokal dan server menolak pilihan yang tidak cocok dengan induknya. Sumber distribusi, tanggal data, batas format, dan caveat dicatat di `docs/SMART_FIELDS.md`.
+- Nama bank tetap berupa teks manual. Perbaikan ini melengkapi pengalaman Smart Fields Tahap 9 dan tidak memulai Tahap 10.
+
+### Validasi Tahap 9
+
+- `composer test --no-interaction` — lulus; Pint lulus, PHPStan 0 error, 94 test / 342 assertion.
+- `npm run build` — lulus dengan peringatan opsional font fallback `fontaine`.
+- `git diff --check` — lulus.
+
+Validasi tambahan memastikan pesan NIK tampil pada halaman publik dalam bahasa
+Indonesia, pesan NIP tidak membocorkan key translasi, dan label alamat menampilkan
+nama wilayah dari kode yang disimpan.
+
+**Berhenti setelah tahap 9.**
+
 ## Tahap berikutnya
 
-Tahap 9 — Smart Fields Indonesia. Belum dikerjakan; mulai hanya setelah disetujui pengguna.
+Tahap 10 — Template Library. Belum dikerjakan; mulai hanya setelah disetujui pengguna.

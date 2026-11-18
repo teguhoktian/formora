@@ -130,7 +130,7 @@ class SubmissionManagementTest extends TestCase
         $version = FormVersion::factory()->for($form)->create([
             'schema' => [
                 'schema_version' => 1,
-                'pages' => [['id' => fake()->uuid(), 'title' => 'Halaman 1', 'description' => null, 'fields' => array_map(fn (array $field): array => $field + ['id' => fake()->uuid()], $fields)]],
+                'pages' => [['id' => fake()->uuid(), 'title' => 'Halaman 1', 'description' => null, 'fields' => array_map(fn (array $field): array => $field + ['id' => fake()->uuid(), 'type' => 'text'], $fields)]],
                 'settings' => [],
             ],
         ]);

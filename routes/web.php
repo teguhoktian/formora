@@ -15,6 +15,15 @@ Route::post('f/{slug}', [PublicFormController::class, 'submit'])
     ->middleware('throttle:10,1')
     ->where('slug', '[a-z0-9-]+')
     ->name('public.forms.submit');
+Route::get('smart-fields/regions/{provinceCode}/regencies', [PublicFormController::class, 'regencies'])
+    ->where('provinceCode', '[0-9]{2}')
+    ->name('public.smart-fields.regencies');
+Route::get('smart-fields/regions/{regencyCode}/districts', [PublicFormController::class, 'districts'])
+    ->where('regencyCode', '[0-9]{2}\\.[0-9]{2}')
+    ->name('public.smart-fields.districts');
+Route::get('smart-fields/regions/{districtCode}/villages', [PublicFormController::class, 'villages'])
+    ->where('districtCode', '[0-9]{2}\\.[0-9]{2}\\.[0-9]{2}')
+    ->name('public.smart-fields.villages');
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::view('dashboard', 'dashboard')->name('dashboard');

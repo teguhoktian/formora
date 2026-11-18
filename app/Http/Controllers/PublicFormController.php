@@ -5,7 +5,10 @@ namespace App\Http\Controllers;
 use App\Models\Form;
 use App\Models\FormVersion;
 use App\Services\FormSchemaService;
+use App\Services\IndonesiaRegionCatalog;
 use App\Services\PublicSubmissionService;
+use App\Services\SmartFieldRegistry;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
@@ -13,7 +16,7 @@ use Illuminate\View\View;
 
 class PublicFormController extends Controller
 {
-    public function show(string $slug): View
+    public function show(string $slug, IndonesiaRegionCatalog $regions): View
     {
         [$form, $version] = $this->publishedForm($slug);
         $schema = app(FormSchemaService::class)->validate($version->schema);
@@ -26,7 +29,24 @@ class PublicFormController extends Controller
             'schema' => $schema,
             'failedPage' => $failedPage,
             'referenceNumber' => session()->pull('submission_reference'),
+            'smartFieldDefinitions' => app(SmartFieldRegistry::class)->definitions(),
+            'provinces' => $regions->provinces(),
         ]);
+    }
+
+    public function regencies(string $provinceCode, IndonesiaRegionCatalog $regions): JsonResponse
+    {
+        return response()->json(['data' => $regions->regencies($provinceCode)]);
+    }
+
+    public function districts(string $regencyCode, IndonesiaRegionCatalog $regions): JsonResponse
+    {
+        return response()->json(['data' => $regions->districts($regencyCode)]);
+    }
+
+    public function villages(string $districtCode, IndonesiaRegionCatalog $regions): JsonResponse
+    {
+        return response()->json(['data' => $regions->villages($districtCode)]);
     }
 
     public function submit(Request $request, string $slug, PublicSubmissionService $submissions, FormSchemaService $schemas): RedirectResponse

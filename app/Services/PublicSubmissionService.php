@@ -29,6 +29,11 @@ class PublicSubmissionService
             }
         }
 
+        $incomingAnswers = $payload['answers'] ?? [];
+        if (is_array($incomingAnswers)) {
+            $payload['answers'] = app(SmartFieldRegistry::class)->normalizeAnswers($incomingAnswers, $fields);
+        }
+
         $names = array_column($fields, 'name');
         $rules = [
             'website' => ['nullable', 'string', 'max:0'],
@@ -77,15 +82,53 @@ class PublicSubmissionService
                 case 'file':
                     $rules[$key] = [$presentRule, 'file', 'mimes:pdf,jpg,jpeg,png,doc,docx', 'max:10240'];
                     break;
+                case 'smart_address':
+                    $regions = app(IndonesiaRegionCatalog::class);
+                    $parts = ['province' => 'Provinsi', 'regency' => 'Kabupaten/Kota', 'district' => 'Kecamatan', 'village' => 'Desa/Kelurahan'];
+                    $rules[$key] = [$presentRule, 'array:'.implode(',', array_keys($parts))];
+                    $allAnswers = $payload['answers'] ?? null;
+                    $address = is_array($allAnswers) && is_array($allAnswers[$field['name']] ?? null)
+                        ? $allAnswers[$field['name']]
+                        : [];
+                    $selectedProvince = is_string($address['province'] ?? null) ? $address['province'] : '';
+                    $selectedRegency = is_string($address['regency'] ?? null) ? $address['regency'] : '';
+                    $selectedDistrict = is_string($address['district'] ?? null) ? $address['district'] : '';
+                    $codes = [
+                        'province' => $regions->provinceCodes(),
+                        'regency' => $regions->regencyCodes($selectedProvince),
+                        'district' => $regions->districtCodes($selectedRegency),
+                        'village' => $regions->villageCodes($selectedDistrict),
+                    ];
+                    foreach ($parts as $part => $partLabel) {
+                        $partKey = $key.'.'.$part;
+                        $rules[$partKey] = [$field['required'] ? 'required' : 'nullable', 'string', Rule::in($codes[$part])];
+                        $attributes[$partKey] = $partLabel;
+                    }
+                    break;
+                default:
+                    $definition = app(SmartFieldRegistry::class)->definition($field['type']);
+                    if ($definition !== null) {
+                        $rules[$key] = [$presentRule, ...$definition['rules']];
+                    }
+                    break;
             }
         }
 
         $validator = Validator::make($payload, $rules, [
-            'required' => 'Isian :attribute wajib dilengkapi.',
+            'required' => 'Isian :attribute wajib diisi.',
+            'digits' => 'Isian :attribute harus terdiri dari :digits digit angka.',
+            'regex' => 'Format :attribute tidak valid.',
             'email' => 'Format :attribute tidak valid.',
-            'date_format' => 'Format tanggal :attribute harus YYYY-MM-DD.',
+            'date_format' => 'Format tanggal :attribute tidak valid.',
+            'before_or_equal' => ':attribute tidak boleh melebihi hari ini.',
+            'numeric' => ':attribute harus berupa angka.',
+            'min.numeric' => ':attribute tidak boleh kurang dari :min.',
+            'in' => 'Pilihan :attribute tidak valid.',
+            'array' => 'Isian :attribute tidak valid.',
+            'string' => 'Isian :attribute harus berupa teks.',
             'mimes' => 'Format file :attribute tidak didukung.',
-            'max' => 'Isian :attribute melewati batas ukuran.',
+            'max.file' => 'Ukuran file :attribute melebihi batas.',
+            'max.string' => 'Isian :attribute melewati batas karakter.',
         ])->setAttributeNames($attributes);
         $validator->after(function ($validator) use ($payload): void {
             $totalBytes = 0;

@@ -31,8 +31,8 @@ class FormSchemaServiceTest extends TestCase
 
         $validated = $schemas->validate($schema);
 
-        $this->assertCount(10, $validated['pages'][0]['fields']);
-        $this->assertCount(10, array_unique(array_column($validated['pages'][0]['fields'], 'id')));
+        $this->assertCount(count(FormSchemaService::FIELD_TYPES), $validated['pages'][0]['fields']);
+        $this->assertCount(count(FormSchemaService::FIELD_TYPES), array_unique(array_column($validated['pages'][0]['fields'], 'id')));
     }
 
     public function test_arbitrary_field_type_and_duplicate_names_are_rejected(): void

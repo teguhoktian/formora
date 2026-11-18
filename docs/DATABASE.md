@@ -51,6 +51,9 @@ Ekspor CSV diproses oleh queue worker dan disimpan di disk privat `local`; akses
 unduh dibatasi ke owner/admin workspace. Nilai field sensitif dimasking pada
 detail dan ekspor, dan audit ekspor hanya menyimpan metadata event.
 
+Definisi dan perilaku Smart Fields Indonesia didokumentasikan di
+[`docs/SMART_FIELDS.md`](SMART_FIELDS.md).
+
 Kolom `is_published` dan `published_at` menandai snapshot historis. Pointer
 `published_version_id` memilih versi aktif; status `paused` mempertahankan pointer,
 sedangkan unpublish mengosongkannya tanpa menghapus versi. Versi published tidak

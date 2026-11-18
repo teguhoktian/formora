@@ -62,7 +62,7 @@
                                 @foreach ($page['fields'] as $field)
                                     @php($fieldName = 'answers['.$field['name'].']')
                                     <div class="space-y-2">
-                                        <label @if (!in_array($field['type'], ['radio', 'checkbox'], true)) for="field-{{ $field['id'] }}" @endif class="block text-sm font-semibold text-slate-800">
+                                        <label @if (!in_array($field['type'], ['radio', 'checkbox', 'smart_address'], true)) for="field-{{ $field['id'] }}" @endif class="block text-sm font-semibold text-slate-800">
                                             {{ $field['label'] }}@if ($field['required']) <span class="text-red-600" aria-label="wajib diisi">*</span>@endif
                                         </label>
                                         @if ($field['type'] === 'textarea')
@@ -84,6 +84,42 @@
                                         @elseif ($field['type'] === 'file')
                                             <input id="field-{{ $field['id'] }}" type="file" name="{{ $fieldName }}" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" class="block w-full rounded-xl border border-slate-300 text-sm text-slate-600 file:mr-4 file:border-0 file:bg-slate-100 file:px-4 file:py-3 file:text-sm file:font-semibold file:text-slate-700">
                                             <p class="text-xs text-slate-500">PDF, JPG, PNG, DOC, atau DOCX · maksimal 10 MB</p>
+                                        @elseif ($field['type'] === 'smart_address')
+                                            <div class="grid gap-3 sm:grid-cols-2" data-smart-address data-regions-url="{{ url('/smart-fields/regions') }}">
+                                                <div>
+                                                    <label for="field-{{ $field['id'] }}-province" class="mb-1 block text-xs font-medium text-slate-600">Provinsi @if ($field['required']) <span class="text-red-600">*</span>@endif</label>
+                                                    <select id="field-{{ $field['id'] }}-province" name="{{ $fieldName }}[province]" data-address-region="province" @required($field['required']) class="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-3 text-sm focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/20">
+                                                        <option value="">Pilih provinsi</option>
+                                                        @foreach ($provinces as $province)<option value="{{ $province['code'] }}">{{ $province['name'] }}</option>@endforeach
+                                                    </select>
+                                                    @error('answers.'.$field['name'].'.province')<p class="mt-1 text-xs font-medium text-red-700">{{ $message }}</p>@enderror
+                                                </div>
+                                                <div>
+                                                    <label for="field-{{ $field['id'] }}-regency" class="mb-1 block text-xs font-medium text-slate-600">Kabupaten/Kota @if ($field['required']) <span class="text-red-600">*</span>@endif</label>
+                                                    <select id="field-{{ $field['id'] }}-regency" name="{{ $fieldName }}[regency]" data-address-region="regency" disabled @required($field['required']) class="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-3 text-sm focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 disabled:bg-slate-100">
+                                                        <option value="">Pilih provinsi lebih dahulu</option>
+                                                    </select>
+                                                    @error('answers.'.$field['name'].'.regency')<p class="mt-1 text-xs font-medium text-red-700">{{ $message }}</p>@enderror
+                                                </div>
+                                                <div>
+                                                    <label for="field-{{ $field['id'] }}-district" class="mb-1 block text-xs font-medium text-slate-600">Kecamatan @if ($field['required']) <span class="text-red-600">*</span>@endif</label>
+                                                    <select id="field-{{ $field['id'] }}-district" name="{{ $fieldName }}[district]" data-address-region="district" disabled @required($field['required']) class="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-3 text-sm focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 disabled:bg-slate-100">
+                                                        <option value="">Pilih kabupaten/kota lebih dahulu</option>
+                                                    </select>
+                                                    @error('answers.'.$field['name'].'.district')<p class="mt-1 text-xs font-medium text-red-700">{{ $message }}</p>@enderror
+                                                </div>
+                                                <div>
+                                                    <label for="field-{{ $field['id'] }}-village" class="mb-1 block text-xs font-medium text-slate-600">Desa/Kelurahan @if ($field['required']) <span class="text-red-600">*</span>@endif</label>
+                                                    <select id="field-{{ $field['id'] }}-village" name="{{ $fieldName }}[village]" data-address-region="village" disabled @required($field['required']) class="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-3 text-sm focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/20 disabled:bg-slate-100">
+                                                        <option value="">Pilih kecamatan lebih dahulu</option>
+                                                    </select>
+                                                    @error('answers.'.$field['name'].'.village')<p class="mt-1 text-xs font-medium text-red-700">{{ $message }}</p>@enderror
+                                                </div>
+                                            </div>
+                                        @elseif (isset($smartFieldDefinitions[$field['type']]))
+                                            @php($smartDefinition = $smartFieldDefinitions[$field['type']])
+                                            <input id="field-{{ $field['id'] }}" type="{{ $smartDefinition['input_type'] }}" inputmode="{{ $smartDefinition['inputmode'] }}" name="{{ $fieldName }}" placeholder="{{ $smartDefinition['placeholder'] }}" maxlength="{{ $smartDefinition['max_length'] }}" @required($field['required']) @if ($smartDefinition['numeric_only']) data-digits-only pattern="[0-9]*" @endif @if ($field['type'] === 'smart_rupiah') min="0" step="any" @endif autocomplete="off" class="w-full rounded-xl border border-slate-300 px-3.5 py-3 text-sm focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/20">
+                                            @if ($smartDefinition['help_text'])<p class="text-xs leading-5 text-slate-500">{{ $smartDefinition['help_text'] }}</p>@endif
                                         @else
                                             <input id="field-{{ $field['id'] }}" type="{{ match ($field['type']) { 'email' => 'email', 'phone' => 'tel', 'number' => 'number', 'date' => 'date', default => 'text' } }}" name="{{ $fieldName }}" maxlength="{{ $field['type'] === 'email' ? 254 : 5000 }}" class="w-full rounded-xl border border-slate-300 px-3.5 py-3 text-sm focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/20">
                                         @endif

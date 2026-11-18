@@ -126,7 +126,7 @@
                         @foreach ($fieldTypes as $type)
                             <button type="button" wire:click="addField('{{ $type }}')" class="flex min-w-0 items-center gap-2 rounded-xl border border-slate-200 px-3 py-2.5 text-left text-xs font-medium text-slate-700 hover:border-emerald-300 hover:bg-emerald-50 focus:outline-none focus:ring-2 focus:ring-emerald-600">
                                 <span class="grid size-6 shrink-0 place-items-center rounded-lg bg-slate-100 text-[10px] font-bold uppercase text-slate-500" aria-hidden="true">{{ substr($type, 0, 2) }}</span>
-                                <span class="truncate">{{ match ($type) { 'text' => 'Teks singkat', 'textarea' => 'Paragraf', 'email' => 'Email', 'phone' => 'Telepon', 'number' => 'Angka', 'date' => 'Tanggal', 'select' => 'Dropdown', 'radio' => 'Pilihan tunggal', 'checkbox' => 'Kotak centang', 'file' => 'Unggah file' } }}</span>
+                                <span class="truncate">{{ $smartFieldDefinitions[$type]['toolbox_label'] ?? match ($type) { 'text' => 'Teks singkat', 'textarea' => 'Paragraf', 'email' => 'Email', 'phone' => 'Telepon', 'number' => 'Angka', 'date' => 'Tanggal', 'select' => 'Dropdown', 'radio' => 'Pilihan tunggal', 'checkbox' => 'Kotak centang', 'file' => 'Unggah file' } }}</span>
                             </button>
                         @endforeach
                     </div>
@@ -165,7 +165,7 @@
                                 <div class="flex items-start gap-3">
                                     <button type="button" data-drag-handle class="mt-0.5 cursor-grab rounded p-1 text-slate-400 hover:bg-slate-100 active:cursor-grabbing" aria-label="Geser untuk mengurutkan field">⠿</button>
                                     <button type="button" wire:click="selectField('{{ $field['id'] }}')" class="min-w-0 flex-1 text-left focus:outline-none">
-                                        <span class="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-slate-400">{{ $field['type'] }}</span>
+                                        <span class="mb-1 block text-[10px] font-semibold uppercase tracking-wide text-slate-400">{{ $smartFieldDefinitions[$field['type']]['label'] ?? $field['type'] }}</span>
                                         <span class="block truncate text-sm font-semibold text-slate-900">{{ $field['label'] }} @if ($field['required'])<span class="text-red-600">*</span>@endif</span>
                                         @if ($field['help_text'])<span class="mt-1 block truncate text-xs text-slate-500">{{ $field['help_text'] }}</span>@endif
                                         @if (in_array($field['type'], ['select', 'radio', 'checkbox'], true))
@@ -195,7 +195,10 @@
             <aside class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm" aria-label="Pengaturan field">
                 <h2 class="text-sm font-semibold text-slate-900">{{ $selectedField ? 'Pengaturan field' : 'Pengaturan halaman' }}</h2>
                 @if ($selectedField)
-                    <p class="mt-1 text-xs text-slate-500">{{ ucfirst($selectedField['type']) }} · {{ $selectedField['name'] }}</p>
+                    <p class="mt-1 text-xs text-slate-500">{{ $smartFieldDefinitions[$selectedField['type']]['label'] ?? ucfirst($selectedField['type']) }} · {{ $selectedField['name'] }}</p>
+                    @if (isset($smartFieldDefinitions[$selectedField['type']]))
+                        <p class="mt-2 text-xs leading-5 text-slate-500">{{ $smartFieldDefinitions[$selectedField['type']]['help_text'] }}</p>
+                    @endif
                     <div class="mt-5 space-y-4">
                         <div>
                             <label for="field-label" class="mb-1.5 block text-xs font-medium text-slate-600">Label</label>
