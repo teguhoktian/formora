@@ -39,6 +39,9 @@
                                     @can('update', $form)
                                         <a href="{{ route('forms.edit', $form) }}" class="rounded-lg px-3 py-2 text-sm font-semibold text-emerald-800 hover:bg-emerald-50 focus:outline-none focus:ring-2 focus:ring-emerald-600">Buka builder</a>
                                     @endcan
+                                    @can('viewSubmissions', $form)
+                                        <a href="{{ route('forms.submissions.index', $form) }}" class="rounded-lg px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100">Respons</a>
+                                    @endcan
                                 </div>
                             </article>
                         @endforeach

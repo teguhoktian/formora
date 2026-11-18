@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\FormController;
 use App\Http\Controllers\PublicFormController;
+use App\Http\Controllers\SubmissionController;
 use App\Http\Controllers\WorkspaceController;
 use Illuminate\Support\Facades\Route;
 
@@ -21,6 +22,11 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('forms', [FormController::class, 'index'])->name('forms.index');
     Route::post('forms', [FormController::class, 'store'])->name('forms.store');
     Route::get('forms/{form}/edit', [FormController::class, 'edit'])->name('forms.edit');
+    Route::get('forms/{form}/submissions', [SubmissionController::class, 'index'])->name('forms.submissions.index');
+    Route::post('forms/{form}/submissions/export', [SubmissionController::class, 'export'])->name('forms.submissions.export');
+    Route::get('forms/{form}/submissions/exports/{export}', [SubmissionController::class, 'download'])->name('forms.submissions.exports.download');
+    Route::get('forms/{form}/submissions/{submission}', [SubmissionController::class, 'show'])->name('forms.submissions.show');
+    Route::patch('forms/{form}/submissions/{submission}', [SubmissionController::class, 'update'])->name('forms.submissions.update');
 
     Route::post('workspaces', [WorkspaceController::class, 'store'])->name('workspaces.store');
     Route::post('workspaces/switch', [WorkspaceController::class, 'switch'])->name('workspaces.switch');

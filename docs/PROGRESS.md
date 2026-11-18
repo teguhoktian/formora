@@ -2,8 +2,8 @@
 
 ## Tahap aktif
 
-Tahap 7 — Public form renderer dan submission selesai; menunggu persetujuan
-pengguna sebelum Tahap 8.
+Tahap 8 — Submission management selesai; menunggu persetujuan pengguna sebelum
+Tahap 9.
 
 ## Hasil Tahap 0
 
@@ -160,7 +160,7 @@ Status: selesai.
 
 ## Tahap 7 — Public form renderer dan submission
 
-Status: selesai; menunggu persetujuan pengguna sebelum Tahap 8.
+Status: selesai.
 
 - Menambahkan URL publik unik per form. Slug dibuat saat publish dan migration mengisi slug untuk form yang sudah ada.
 - Form publik hanya membaca versi published aktif; draft, paused, unpublished, dan submission detail tidak tersedia melalui endpoint publik.
@@ -181,6 +181,25 @@ Status: selesai; menunggu persetujuan pengguna sebelum Tahap 8.
 
 - Domain final, identitas visual, batas paket, provider object storage/email/pembayaran, kebijakan retensi, role organisasi, sumber data referensi, dan ketentuan legal template dicatat di `docs/IMPLEMENTATION_PLAN.md` dan ditanyakan saat relevan.
 
+## Tahap 8 — Submission management
+
+Status: selesai; menunggu persetujuan pengguna sebelum Tahap 9.
+
+- Menambahkan daftar respons per form dengan pagination 25 item, pencarian jawaban/referensi, filter status dan tanggal, serta detail respons. Query daftar dibatasi ke kolom yang ditampilkan dan seluruh akses dibatasi workspace aktif.
+- Detail dan CSV memasking field yang terindikasi sensitif (termasuk NIK, NPWP, rekening, token, kata sandi) dan tidak menampilkan path file privat. Nilai input yang dapat menjadi formula spreadsheet dinetralkan pada CSV.
+- Menambahkan status tindak lanjut dan catatan internal. Owner/admin/member dapat memperbarui status; viewer hanya dapat melihat. Ekspor dan unduh hanya untuk owner/admin.
+- Ekspor CSV memakai queue job, membaca submission per batch 200 baris, menggunakan filter daftar yang sama, menyimpan file pada disk privat, dan menyediakan unduhan setelah selesai. Header berisi kolom metadata dan nama field; tiap submission menjadi satu baris. Audit hanya mencatat event dan ID form/submission tanpa isi jawaban atau catatan.
+- Migration `2026_11_18_000009_add_internal_notes_to_form_submissions` dan `2026_11_18_000010_create_submission_exports_table` diterapkan ke PostgreSQL lokal; keduanya berstatus Ran.
+
+### Validasi Tahap 8
+
+- `php artisan test --compact tests/Feature/SubmissionManagementTest.php` — lulus, 5 test / 29 assertion.
+- `php artisan test --compact` — lulus, 89 test / 287 assertion. Pint dan PHPStan juga lulus setelah perubahan format CSV.
+- Migration PostgreSQL dan `php artisan migrate:status` — kedua migration Tahap 8 berstatus Ran.
+- `git diff --check` — lulus.
+
+**Berhenti setelah tahap 8.**
+
 ## Tahap berikutnya
 
-Tahap 8 — Submission management. Belum dikerjakan; mulai hanya setelah disetujui pengguna.
+Tahap 9 — Smart Fields Indonesia. Belum dikerjakan; mulai hanya setelah disetujui pengguna.

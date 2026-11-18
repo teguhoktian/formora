@@ -21,6 +21,21 @@ class FormPolicy
         return $user->can('view', $form->workspace);
     }
 
+    public function viewSubmissions(User $user, Form $form): bool
+    {
+        return $user->workspaceMemberships()
+            ->where('workspace_id', $form->workspace_id)
+            ->exists();
+    }
+
+    public function downloadSubmissions(User $user, Form $form): bool
+    {
+        return $user->workspaceMemberships()
+            ->where('workspace_id', $form->workspace_id)
+            ->whereIn('role', ['owner', 'admin'])
+            ->exists();
+    }
+
     public function update(User $user, Form $form): bool
     {
         return $user->workspaceMemberships()

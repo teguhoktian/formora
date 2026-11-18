@@ -11,7 +11,8 @@ di bawah; tabel `users`, sesi, cache, queue, dan passkey berasal dari starter ki
 | `workspace_members` | Keanggotaan dan role awal | FK ke workspace dan user; unik per pasangan workspace/user |
 | `forms` | Form, status draft/published/paused/archived, slug publik, dan versi aktif | UUID; memiliki `workspace_id`; unik komposit `(workspace_id, id)`; slug unik |
 | `form_versions` | Snapshot schema form | UUID; JSONB; unik per `(form_id, version_number)` |
-| `form_submissions` | Jawaban form, nomor referensi, dan status awal | UUID; JSONB; menyimpan versi yang dijawab; reference unik |
+| `form_submissions` | Jawaban form, nomor referensi, status, dan catatan internal | UUID; JSONB; menyimpan versi yang dijawab; reference unik |
+| `submission_exports` | Status/filter antrean ekspor dan lokasi file privat | UUID; FK komposit workspace/form; tidak menyimpan isi jawaban |
 | `audit_logs` | Metadata aktivitas | Aktor dan workspace opsional; tidak menyediakan kolom payload/jawaban |
 
 `User` memiliki relasi keanggotaan dan workspace. `Workspace` memiliki relasi
@@ -33,7 +34,7 @@ memiliki relasi langsung ke workspace, form, dan versi yang dijawab.
   saat form dihapus. Penghapusan anggota mengikuti FK dan constraint unik.
 - Status role, form, dan submission dibatasi oleh kolom enum database.
 - Indeks mendukung lookup anggota per user, form per workspace/status, submission
-  per workspace/form/status, dan audit per workspace/aktor/waktu.
+  per workspace/form/status, ekspor per form/waktu, dan audit per workspace/aktor/waktu.
 
 ## Data sensitif dan audit
 
@@ -46,6 +47,9 @@ pekerjaan hardening sebelum production.
 Upload jawaban disimpan pada disk privat `local` di bawah
 `form-submissions/{form-id}`. Nilai jawaban hanya divalidasi menurut schema versi
 publik aktif; upload dibatasi MIME/ukuran di server dan tidak diberi URL publik.
+Ekspor CSV diproses oleh queue worker dan disimpan di disk privat `local`; akses
+unduh dibatasi ke owner/admin workspace. Nilai field sensitif dimasking pada
+detail dan ekspor, dan audit ekspor hanya menyimpan metadata event.
 
 Kolom `is_published` dan `published_at` menandai snapshot historis. Pointer
 `published_version_id` memilih versi aktif; status `paused` mempertahankan pointer,
