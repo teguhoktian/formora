@@ -61,7 +61,10 @@
         </main>
 
         <footer class="mx-auto max-w-7xl px-6 pb-8 text-sm text-slate-500 lg:px-8">
-            © {{ date('Y') }} Formora
+            <div class="flex flex-wrap items-center justify-between gap-3">
+                <span>© {{ date('Y') }} Formora</span>
+                <a href="{{ route('privacy') }}" class="underline underline-offset-4 hover:text-slate-800">Pemberitahuan privasi</a>
+            </div>
         </footer>
     </body>
 </html>

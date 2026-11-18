@@ -143,7 +143,7 @@
                 </form>
             @endif
         </section>
-        <p class="mt-5 text-center text-xs text-slate-400">Jawaban Anda dikirim dengan aman melalui Formora.</p>
+        <p class="mt-5 text-center text-xs text-slate-500">Baca <a href="{{ route('privacy') }}" class="underline underline-offset-2">pemberitahuan privasi Formora</a>. Untuk tujuan dan penggunaan jawaban, hubungi pengelola formulir.</p>
     </main>
 
     <script>

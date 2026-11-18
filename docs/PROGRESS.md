@@ -2,8 +2,9 @@
 
 ## Tahap aktif
 
-Tahap 10 — Template Library selesai; menunggu persetujuan pengguna sebelum
-Tahap 11.
+Tahap 11 — Hardening MVP selesai; menunggu persetujuan sebelum pekerjaan
+backlog pasca-MVP. Backup/restore rehearsal pada target disposable deployment
+tetap menjadi langkah operasional sebelum peluncuran.
 
 ## Hasil Tahap 0
 
@@ -247,4 +248,45 @@ Status: selesai; menunggu persetujuan pengguna sebelum Tahap 11.
 
 ## Tahap berikutnya
 
-Tahap 11 — Hardening MVP. Belum dikerjakan; mulai hanya setelah disetujui pengguna.
+## Tahap 11 — Hardening MVP
+
+Status: selesai untuk cakupan aplikasi dan dokumentasi; menunggu persetujuan
+sebelum pekerjaan backlog pasca-MVP.
+
+- Security review: request web tetap melewati CSRF Laravel; konfigurasi default
+  dan `.env.example` mengenkripsi sesi, cookie HttpOnly/SameSite Lax, cookie
+  Secure aktif untuk production, file disk lokal privat tidak dapat dilayani
+  sebagai temporary URL, dan response web menambah header keamanan dasar. HSTS
+  hanya dikirim pada HTTPS.
+- Mempertahankan isolasi workspace dan menambah tes matriks authorization
+  owner/admin/member/viewer untuk edit, lihat respons, publish, dan ekspor.
+- Pengiriman publik memiliki limit 10/menit; permintaan ekspor dibatasi 5/menit.
+  Validasi MIME/ukuran upload, honeypot, dan pengujian isolasi sebelumnya tetap
+  berlaku.
+- Menambah halaman pemberitahuan privasi awal dan tautan dari beranda/form publik.
+  Dokumen menjelaskan pemrosesan, akses, dan status retensi; tidak mengklaim
+  kebijakan legal final. Persetujuan per form dan kontak operator perlu
+  ditentukan sebelum layanan publik.
+- Setup lokal memuat arahan deployment aman, rotasi log harian 14 hari, backup
+  PostgreSQL yang harus dienkripsi/dibatasi aksesnya oleh operator, prosedur
+  pemulihan ke database terpisah, dan desain penghapusan. Tidak ada penghapusan
+  otomatis submission atau file karena masa retensi belum ditentukan.
+- Pemeriksaan pagination/query: daftar submission tetap server-side 25 baris;
+  export tetap batch 200. Pencarian jawaban JSONB memakai scan substring dan
+  dapat perlu indeks/perubahan desain saat volume data meningkat.
+- Rehearsal restore sengaja tidak dijalankan pada database lokal yang mungkin
+  berisi data pengguna; lakukan pada target disposable milik deployment sebelum
+  peluncuran. Profiling beban dan pemeriksaan visual perangkat nyata juga
+  menjadi validasi lingkungan deployment.
+
+### Validasi Tahap 11
+
+- `php artisan test --compact tests/Feature/HardeningTest.php` — lulus, 4 test /
+  37 assertion.
+- `composer test --no-interaction` — lulus; Pint, PHPStan 0 error, 105 test /
+  429 assertion.
+- `npm run build` — lulus; Vite menampilkan peringatan opsional paket
+  `fontaine` untuk optimasi font.
+- `git diff --check` — lulus.
+
+**Berhenti setelah tahap 11.**
