@@ -9,7 +9,7 @@ di bawah; tabel `users`, sesi, cache, queue, dan passkey berasal dari starter ki
 |---|---|---|
 | `workspaces` | Ruang kerja | UUID; memiliki anggota dan form |
 | `workspace_members` | Keanggotaan dan role awal | FK ke workspace dan user; unik per pasangan workspace/user |
-| `forms` | Form dan status draft/published/paused/archived | UUID; memiliki `workspace_id`; unik komposit `(workspace_id, id)` |
+| `forms` | Form, status draft/published/paused/archived, dan versi publik aktif | UUID; memiliki `workspace_id`; unik komposit `(workspace_id, id)` |
 | `form_versions` | Snapshot schema form | UUID; JSONB; unik per `(form_id, version_number)` |
 | `form_submissions` | Jawaban form dan status awal | UUID; JSONB; wajib menyimpan `form_version_id` |
 | `audit_logs` | Metadata aktivitas | Aktor dan workspace opsional; tidak menyediakan kolom payload/jawaban |
@@ -26,6 +26,8 @@ memiliki relasi langsung ke workspace, form, dan versi yang dijawab.
 - `form_submissions (form_id, form_version_id)` mereferensikan versi yang
   memang milik form tersebut. Kedua pasangan memakai foreign key komposit,
   sehingga database menolak submission lintas workspace atau versi yang salah.
+- `forms (id, published_version_id)` mereferensikan versi milik form yang sama.
+  PostgreSQL memakai foreign key komposit; SQLite test memakai trigger setara.
 - Workspace tidak dapat dihapus selama masih punya form; form tidak dapat
   dihapus selama masih punya submission. Versi tanpa submission ikut terhapus
   saat form dihapus. Penghapusan anggota mengikuti FK dan constraint unik.
@@ -41,9 +43,10 @@ log. Audit hanya menyimpan event, aktor/workspace, serta tipe dan ID subjek.
 Penerapan retention, deletion workflow, dan kebijakan akses audit masih menjadi
 pekerjaan hardening sebelum production.
 
-Kolom `is_published` dan `published_at` menyediakan state versi. Aturan publish,
-transaksi versioning, dan penolakan perubahan pada versi yang sudah dipublikasikan
-akan diterapkan pada Tahap 6.
+Kolom `is_published` dan `published_at` menandai snapshot historis. Pointer
+`published_version_id` memilih versi aktif; status `paused` mempertahankan pointer,
+sedangkan unpublish mengosongkannya tanpa menghapus versi. Versi published tidak
+dapat diubah atau dihapus; model guard dan database trigger menolak perubahan.
 
 ## Menjalankan migration
 

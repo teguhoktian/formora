@@ -11,9 +11,22 @@
             <div class="flex items-center gap-2 text-xs" aria-live="polite">
                 <span wire:loading class="text-amber-700">Menyimpan…</span>
                 <span wire:loading.remove @class(['text-emerald-700' => $saveState === 'saved', 'text-red-700' => $saveState === 'error'])>
-                    {{ $saveState === 'saved' ? 'Tersimpan' : 'Belum tersimpan' }}
+                    {{ $form->status === 'published' ? 'Dipublikasikan' : ($form->status === 'paused' ? 'Dijeda' : 'Draf') }} · {{ $saveState === 'saved' ? 'Tersimpan' : 'Belum tersimpan' }}
                 </span>
             </div>
+            @if ($canPublish)
+                @if ($form->status === 'published')
+                    <button type="button" wire:click="publishDraft('{{ $draftId }}')" wire:loading.attr="disabled" wire:confirm="Publikasikan draf sebagai versi publik terbaru?" class="rounded-xl bg-emerald-700 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-800 disabled:opacity-50">Publikasikan draf</button>
+                    <button type="button" wire:click="pause" class="rounded-xl border border-amber-300 px-3 py-2 text-xs font-semibold text-amber-800 hover:bg-amber-50">Jeda publik</button>
+                    <button type="button" wire:click="unpublish" wire:confirm="Hentikan publikasi form ini? Versi publik sebelumnya tetap disimpan." class="rounded-xl border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50">Hentikan publikasi</button>
+                @elseif ($form->status === 'paused')
+                    <button type="button" wire:click="publishDraft('{{ $draftId }}')" wire:loading.attr="disabled" wire:confirm="Publikasikan draf sebagai versi publik terbaru?" class="rounded-xl bg-emerald-700 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-800 disabled:opacity-50">Publikasikan draf</button>
+                    <button type="button" wire:click="resume" class="rounded-xl border border-emerald-300 px-3 py-2 text-xs font-semibold text-emerald-800 hover:bg-emerald-50">Lanjutkan publikasi</button>
+                    <button type="button" wire:click="unpublish" wire:confirm="Hentikan publikasi form ini? Versi publik sebelumnya tetap disimpan." class="rounded-xl border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50">Hentikan publikasi</button>
+                @else
+                    <button type="button" wire:click="publishDraft('{{ $draftId }}')" wire:loading.attr="disabled" wire:confirm="Publikasikan versi draf ini?" class="rounded-xl bg-emerald-700 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-800 disabled:opacity-50">Publikasikan</button>
+                @endif
+            @endif
             <button type="button" wire:click="setTab('preview')" class="rounded-xl border border-slate-300 px-3.5 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-emerald-600">Pratinjau</button>
         </div>
 
@@ -33,6 +46,9 @@
     </header>
 
     @error('save')
+        <div class="mx-auto mt-4 max-w-5xl px-4 sm:px-6" role="alert"><p class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{{ $message }}</p></div>
+    @enderror
+    @error('publish')
         <div class="mx-auto mt-4 max-w-5xl px-4 sm:px-6" role="alert"><p class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{{ $message }}</p></div>
     @enderror
     @if ($errors->any() && !$errors->has('save'))

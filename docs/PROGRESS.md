@@ -2,8 +2,8 @@
 
 ## Tahap aktif
 
-Tahap 5 — Form Builder: fondasi schema selesai; menunggu persetujuan pengguna
-sebelum Tahap 6.
+Tahap 6 — Versioning dan publish selesai; menunggu persetujuan pengguna sebelum
+Tahap 7.
 
 ## Hasil Tahap 0
 
@@ -80,7 +80,7 @@ Status: selesai.
 
 ### Risiko / backlog Tahap 2
 
-- Proses publish dan immutable version akan diterapkan pada Tahap 6.
+- Proses publish dan immutable version diselesaikan pada Tahap 6.
 - Policy, isolasi workspace pada operasi aplikasi, serta aturan lifecycle anggota dikerjakan pada Tahap 3; constraint database saat ini sudah melindungi pasangan workspace/form submission.
 - Retention, penghapusan terkontrol, dan review kebijakan audit tetap menjadi pekerjaan hardening.
 
@@ -123,14 +123,14 @@ Status: selesai.
 
 ## Tahap 5 — Form Builder: fondasi schema
 
-Status: selesai; menunggu persetujuan pengguna sebelum Tahap 6.
+Status: selesai.
 
 - Menambahkan daftar dan pembuatan form dalam workspace aktif, serta halaman edit yang hanya dapat dibuka anggota workspace dengan izin update. Workspace ID dari request tidak dipercaya.
 - Membuat draft schema JSON berversi dengan UUID stabil untuk halaman dan field. Validasi backend membatasi tipe field ke text, textarea, email, phone, number, date, select, radio, checkbox, dan file; nama field unik tanpa membedakan kapitalisasi.
 - Menambahkan builder Livewire dengan tab Build, Design, Logic, Settings, dan Preview; toolbox, canvas, inspector, tambah/hapus/duplikasi field, tambah/hapus halaman, edit pengaturan, dan autosave draft.
 - Reorder menggunakan SortableJS dan mengirim urutan UUID sekali setelah drop; server memverifikasi semua ID cocok dengan field pada halaman sebelum menyimpan.
 - Draft baru dibuat dari schema default. Jika form hanya memiliki versi published, builder membuat draft baru dari schema tersebut dan tidak mengubah versi published.
-- Tidak ada migrasi database pada tahap ini; struktur JSONB yang ada digunakan. Publishing dan versi immutable tetap untuk Tahap 6.
+- Tidak ada migrasi database pada tahap ini; struktur JSONB yang ada digunakan. Publishing dan versi immutable diselesaikan pada Tahap 6.
 
 ### Validasi Tahap 5
 
@@ -139,10 +139,29 @@ Status: selesai; menunggu persetujuan pengguna sebelum Tahap 6.
 - `npm run build` — lulus dengan Vite; fallback font opsional memberi peringatan `fontaine`.
 - `git diff --check` — lulus.
 
+## Tahap 6 — Versioning dan publish
+
+Status: selesai; menunggu persetujuan pengguna sebelum Tahap 7.
+
+- Menambahkan pointer `published_version_id` pada form; constraint komposit memastikan versi aktif milik form yang sama.
+- Publish berjalan dalam transaksi dengan row lock pada form, memvalidasi schema, menerbitkan draft sebagai snapshot immutable, dan memindahkan pointer versi aktif. Permintaan membawa ID draft yang diharapkan agar double-submit/stale request tidak menerbitkan draft berikutnya; setelah publish, builder menyediakan draft baru dari snapshot tersebut.
+- Versi published tidak dapat diedit atau dihapus; model guard dan database trigger menolak perubahan. Pause mempertahankan pointer; resume mengaktifkannya kembali; unpublish mengosongkan pointer tanpa menghapus riwayat versi.
+- Hanya owner dan admin workspace yang dapat publish, jeda, lanjutkan, atau menghentikan publikasi. Member tetap dapat menyunting draft.
+- Submission historis tetap terhubung ke versi yang dijawab saat versi publik berganti.
+- Menambah migration aditif untuk pointer versi aktif dan memperbarui `docs/DATABASE.md`. Tidak ada migrasi yang dijalankan terhadap database lokal berisi data.
+
+### Validasi Tahap 6
+
+- `vendor/bin/pint --parallel` — lulus.
+- `composer test --no-interaction` — lulus; Pint lulus, PHPStan 0 error, 76 test / 202 assertion lulus.
+- Tes mencakup pointer dan constraint lintas form, publish permission, immutable version termasuk query builder, submission historis, pause/resume/unpublish, dan permintaan publish stale yang beradu.
+- Migration `2026_11_18_000007_add_published_version_to_forms_table` diterapkan ke PostgreSQL lokal `formora`; `migrate:status` menunjukkan Ran dan `db:table forms` menampilkan `published_version_id` beserta FK komposit. Smoke test publish PostgreSQL dalam transaksi lalu di-rollback — lulus.
+- `git diff --check` — lulus.
+
 ## Backlog / keputusan tertunda
 
 - Domain final, identitas visual, batas paket, provider object storage/email/pembayaran, kebijakan retensi, role organisasi, sumber data referensi, dan ketentuan legal template dicatat di `docs/IMPLEMENTATION_PLAN.md` dan ditanyakan saat relevan.
 
 ## Tahap berikutnya
 
-Tahap 6 — Publishing dan lifecycle immutable form. Belum dikerjakan; mulai hanya setelah disetujui pengguna.
+Tahap 7 — Public form renderer dan submission. Belum dikerjakan; mulai hanya setelah disetujui pengguna.

@@ -16,8 +16,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string $title
  * @property string|null $description
  * @property string $status
+ * @property string|null $published_version_id
  */
-#[Fillable(['workspace_id', 'title', 'description', 'status'])]
+#[Fillable(['workspace_id', 'title', 'description', 'status', 'published_version_id'])]
 class Form extends Model
 {
     /** @use HasFactory<FormFactory> */
@@ -33,6 +34,12 @@ class Form extends Model
     public function versions(): HasMany
     {
         return $this->hasMany(FormVersion::class);
+    }
+
+    /** @return BelongsTo<FormVersion, $this> */
+    public function publishedVersion(): BelongsTo
+    {
+        return $this->belongsTo(FormVersion::class, 'published_version_id');
     }
 
     /** @return HasMany<FormSubmission, $this> */

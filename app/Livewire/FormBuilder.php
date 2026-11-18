@@ -5,6 +5,7 @@ namespace App\Livewire;
 use App\Models\Form;
 use App\Services\CurrentWorkspace;
 use App\Services\FormBuilderService;
+use App\Services\FormPublishingService;
 use App\Services\FormSchemaService;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Gate;
@@ -137,6 +138,34 @@ class FormBuilder extends Component
     {
         abort_unless(in_array($tab, ['build', 'settings', 'preview'], true), 422);
         $this->activeTab = $tab;
+    }
+
+    public function publishDraft(string $expectedDraftId, FormPublishingService $publishing, FormSchemaService $schemas): void
+    {
+        $form = $this->currentForm();
+        Gate::authorize('publish', $form);
+        $publishing->publishDraft($form, $expectedDraftId, $schemas);
+    }
+
+    public function pause(FormPublishingService $publishing): void
+    {
+        $form = $this->currentForm();
+        Gate::authorize('publish', $form);
+        $publishing->pause($form);
+    }
+
+    public function resume(FormPublishingService $publishing): void
+    {
+        $form = $this->currentForm();
+        Gate::authorize('publish', $form);
+        $publishing->resume($form);
+    }
+
+    public function unpublish(FormPublishingService $publishing): void
+    {
+        $form = $this->currentForm();
+        Gate::authorize('publish', $form);
+        $publishing->unpublish($form);
     }
 
     public function addField(string $type, FormBuilderService $builder, FormSchemaService $schemas): void
@@ -280,6 +309,7 @@ class FormBuilder extends Component
         $form = $this->currentForm();
         Gate::authorize('update', $form);
         $schema = $builder->ensureDraft($form, $schemas);
+        $draftId = $form->versions()->where('is_published', false)->orderByDesc('version_number')->value('id');
         $pageIndex = $this->pageIndex($schema, $this->selectedPageId);
 
         return view('livewire.form-builder', [
@@ -288,6 +318,8 @@ class FormBuilder extends Component
             'activePage' => $schema['pages'][$pageIndex],
             'selectedField' => $this->selectedField($schema),
             'fieldTypes' => FormSchemaService::FIELD_TYPES,
+            'canPublish' => auth()->user()?->can('publish', $form) ?? false,
+            'draftId' => $draftId,
         ]);
     }
 

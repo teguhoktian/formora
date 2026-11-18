@@ -29,6 +29,14 @@ class FormPolicy
             ->exists();
     }
 
+    public function publish(User $user, Form $form): bool
+    {
+        return $user->workspaceMemberships()
+            ->where('workspace_id', $form->workspace_id)
+            ->whereIn('role', ['owner', 'admin'])
+            ->exists();
+    }
+
     public function delete(User $user, Form $form): bool
     {
         return $user->can('update', $form);

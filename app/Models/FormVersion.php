@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
+use LogicException;
 
 /**
  * @property string $id
@@ -24,6 +25,22 @@ class FormVersion extends Model
 {
     /** @use HasFactory<FormVersionFactory> */
     use HasFactory, HasUuids;
+
+    protected static function booted(): void
+    {
+        static::updating(function (FormVersion $version): void {
+            if ($version->getOriginal('is_published') === true
+                && $version->isDirty(['form_id', 'version_number', 'schema', 'is_published', 'published_at'])) {
+                throw new LogicException('Published form versions are immutable.');
+            }
+        });
+
+        static::deleting(function (FormVersion $version): void {
+            if ($version->is_published) {
+                throw new LogicException('Published form versions cannot be deleted.');
+            }
+        });
+    }
 
     /**
      * @return array<string, string>
