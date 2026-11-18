@@ -2,8 +2,8 @@
 
 ## Tahap aktif
 
-Tahap 1 — Bootstrap Laravel selesai; menunggu persetujuan pengguna sebelum
-Tahap 2.
+Tahap 2 — Fondasi database dan model selesai; menunggu persetujuan pengguna
+sebelum Tahap 3.
 
 ## Hasil Tahap 0
 
@@ -28,7 +28,7 @@ Tahap 2.
 
 ## Tahap 1 — Bootstrap Laravel
 
-Status: selesai, menunggu persetujuan Tahap 2.
+Status: selesai.
 
 - Laravel 13.43.0 dan Livewire 4.4.8 dengan starter kit Livewire resmi.
 - PHP 8.3 kompatibel; frontend memakai Vite 8.3.8 standar dan Tailwind CSS 4.3.5.
@@ -53,7 +53,36 @@ Status: selesai, menunggu persetujuan Tahap 2.
 - PostgreSQL server online, tetapi role `oktian` tidak tersedia untuk autentikasi peer dan hak sudo tanpa password tidak tersedia. Database/user `formora` belum dibuat; isi kredensial `.env` dan siapkan database sesuai `docs/LOCAL_SETUP.md` sebelum memakai PostgreSQL.
 - `npm audit` melaporkan 6 advisori high yang berasal dari satu advisori `picomatch` transitif (GHSA-fc5q-39xc-vjpf). Perbaikan otomatis npm akan menurunkan Vite ke versi mayor 6 yang tidak kompatibel dengan plugin Vite saat ini; advisori yang dicek belum mencantumkan versi patch. Jangan jalankan `npm audit fix --force`; tinjau kembali setelah upstream merilis perbaikan.
 - Percobaan `php artisan test` yang berlangsung bersamaan dengan build aset sempat membaca manifest saat build mengganti file. Pengujian berurutan setelah build selesai lulus semua.
-- Repository Git belum diinisialisasi.
+- Pada akhir Tahap 1 belum ada metadata Git; repository kini tersedia pada branch `main`.
+
+## Tahap 2 — Fondasi database dan model
+
+Status: selesai, menunggu persetujuan Tahap 3.
+
+- Menambah tabel `workspaces`, `workspace_members`, `forms`, `form_versions`, `form_submissions`, dan `audit_logs`. Migration `users` bawaan tidak diubah.
+- UUID dipakai untuk workspace, form, versi, dan submission. Schema form serta jawaban submission memakai JSONB di PostgreSQL.
+- Foreign key komposit mencegah submission memakai workspace/form yang tidak cocok atau versi milik form lain.
+- Enum database membatasi role dan status. Foreign key, indeks, aturan delete, dan unique constraint dicatat di `docs/DATABASE.md`.
+- Menambahkan Eloquent models, relationships, dan factories. Seeder tidak lagi membuat user contoh.
+- PostgreSQL `formora` sudah berisi tabel bawaan serta satu user sebelum Tahap 2. Migration hanya menambah tabel; user dan record bawaan tetap ada. Semua tabel produk baru masih kosong.
+
+### Validasi Tahap 2
+
+- `php artisan migrate --force` pada PostgreSQL `formora` — keenam migration lulus.
+- `php artisan migrate:status` — seluruh migration berstatus Ran.
+- `php artisan db:show --counts` — enam tabel produk baru memiliki 0 row; tabel `users` tetap memiliki 1 row.
+- Database scratch SQLite kosong: seluruh migration naik, lalu `migrate:rollback --step=6` berhasil; database scratch dihapus setelah validasi.
+- Constraint PostgreSQL diuji dalam transaksi yang di-rollback: insert valid/JSONB berhasil; versi form yang salah, referensi lintas workspace, dan status invalid ditolak.
+- Eloquent UUID, JSONB cast, dan relasi versi diuji di PostgreSQL dalam transaksi yang di-rollback.
+- `composer test --no-interaction` — lulus; Pint dan PHPStan lulus, 48 test / 120 assertion lulus.
+- `npm run build` — lulus.
+- `git diff --check` — lulus.
+
+### Risiko / backlog Tahap 2
+
+- Proses publish dan immutable version akan diterapkan pada Tahap 6.
+- Policy, isolasi workspace pada operasi aplikasi, serta aturan lifecycle anggota dikerjakan pada Tahap 3; constraint database saat ini sudah melindungi pasangan workspace/form submission.
+- Retention, penghapusan terkontrol, dan review kebijakan audit tetap menjadi pekerjaan hardening.
 
 ## Backlog / keputusan tertunda
 
@@ -61,4 +90,4 @@ Status: selesai, menunggu persetujuan Tahap 2.
 
 ## Tahap berikutnya
 
-Tahap 2 — Fondasi database dan model. Belum dikerjakan; mulai hanya setelah disetujui pengguna.
+Tahap 3 — Autentikasi dan workspace. Belum dikerjakan; mulai hanya setelah disetujui pengguna.
