@@ -66,7 +66,7 @@
                             <div class="space-y-7">
                                 @foreach ($page['fields'] as $field)
                                     @php($fieldName = 'answers['.$field['name'].']')
-                                    <div class="space-y-2">
+                                    <div class="space-y-2" data-field-id="{{ $field['id'] }}" data-field-name="{{ $field['name'] }}" @if (is_array($field['visibility'] ?? null)) data-visibility-source="{{ $field['visibility']['field_id'] }}" data-visibility-value="{{ $field['visibility']['value'] }}" @endif>
                                         <label @if (!in_array($field['type'], ['radio', 'checkbox', 'smart_address'], true)) for="field-{{ $field['id'] }}" @endif class="block text-sm font-semibold text-slate-800">
                                             {{ $field['label'] }}@if ($field['required']) <span class="text-red-600" aria-label="wajib diisi">*</span>@endif
                                         </label>
@@ -165,6 +165,43 @@
             const pages = Array.from(form.querySelectorAll('[data-public-page]'));
             const pageInput = form.querySelector('[data-current-page]');
             let current = Math.min(Number(pageInput.value) || 0, pages.length - 1);
+            const fields = Array.from(form.querySelectorAll('[data-field-id]'));
+            const readValue = (fieldName) => {
+                const namedControls = Array.from(form.elements).filter((control) => control.name === `answers[${fieldName}]`);
+                const selectedRadio = namedControls.find((control) => control.type === 'radio' && control.checked);
+                const control = namedControls.find((item) => item.tagName === 'SELECT') ?? selectedRadio ?? namedControls.find((item) => item.type !== 'radio');
+                return control?.value ?? '';
+            };
+            const updateVisibility = () => {
+                fields.forEach((field) => {
+                    const sourceId = field.dataset.visibilitySource;
+                    if (!sourceId) return;
+                    const source = fields.find((candidate) => candidate.dataset.fieldId === sourceId);
+                    const visible = source && readValue(source.dataset.fieldName) === field.dataset.visibilityValue;
+                    const isVisible = Boolean(visible);
+                    const wasVisible = field.dataset.visibilityWasVisible === 'true';
+                    const controls = Array.from(field.querySelectorAll('input, select, textarea'));
+
+                    controls.forEach((control) => {
+                        if (control.dataset.visibilityInitialized !== 'true') {
+                            control.dataset.visibilityInitialized = 'true';
+                            control.dataset.visibilityOriginalDisabled = String(control.disabled);
+                        }
+                    });
+
+                    if (!isVisible && wasVisible) {
+                        controls.forEach((control) => {
+                            if (control.type === 'checkbox' || control.type === 'radio') control.checked = false;
+                            else if (control.type === 'file') control.value = '';
+                            else control.value = '';
+                        });
+                    }
+                    field.hidden = !isVisible;
+                    field.setAttribute('aria-hidden', String(!isVisible));
+                    controls.forEach((control) => { control.disabled = !isVisible || control.dataset.visibilityOriginalDisabled === 'true'; });
+                    field.dataset.visibilityWasVisible = String(isVisible);
+                });
+            };
             const showPage = (index) => {
                 current = Math.max(0, Math.min(index, pages.length - 1));
                 pages.forEach((page, pageIndex) => { page.hidden = pageIndex !== current; });
@@ -174,6 +211,9 @@
                 if (event.target.closest('[data-page-next]')) showPage(current + 1);
                 if (event.target.closest('[data-page-back]')) showPage(current - 1);
             });
+            form.addEventListener('change', updateVisibility);
+            form.addEventListener('input', updateVisibility);
+            updateVisibility();
             showPage(current);
         });
     </script>

@@ -109,6 +109,66 @@ class FormBuilderTest extends TestCase
         $this->assertCount(1, $schema['pages']);
     }
 
+    public function test_builder_can_set_a_visibility_condition_for_a_field(): void
+    {
+        [$owner, $form] = $this->makeFormFor('owner');
+        $schemas = app(FormSchemaService::class);
+        $schema = $form->versions()->firstOrFail()->schema;
+        $source = $schemas->newField('select', $schema);
+        $target = $schemas->newField('text', $schema);
+        $schema['pages'][0]['fields'] = [$source, $target];
+        $form->versions()->firstOrFail()->update(['schema' => $schema]);
+
+        Livewire::actingAs($owner)
+            ->test(FormBuilder::class, ['formId' => $form->id])
+            ->call('setTab', 'logic')
+            ->call('selectField', $target['id'])
+            ->set('visibilityFieldId', $source['id'])
+            ->set('visibilityValue', 'pilihan_1')
+            ->call('saveVisibilityCondition')
+            ->assertSet('saveState', 'saved');
+
+        $saved = $form->versions()->firstOrFail()->fresh()->schema;
+        $this->assertSame([
+            'field_id' => $source['id'],
+            'operator' => 'equals',
+            'value' => 'pilihan_1',
+        ], $saved['pages'][0]['fields'][1]['visibility']);
+    }
+
+    public function test_builder_loads_each_fields_own_visibility_condition_when_switching_targets(): void
+    {
+        [$owner, $form] = $this->makeFormFor('owner');
+        $schemas = app(FormSchemaService::class);
+        $schema = $form->versions()->firstOrFail()->schema;
+        $firstSource = $schemas->newField('select', $schema);
+        $secondSource = $schemas->newField('radio', $schema);
+        $firstTarget = $schemas->newField('text', $schema);
+        $secondTarget = $schemas->newField('text', $schema);
+        $firstTarget['visibility'] = [
+            'field_id' => $firstSource['id'],
+            'operator' => 'equals',
+            'value' => 'pilihan_1',
+        ];
+        $secondTarget['visibility'] = [
+            'field_id' => $secondSource['id'],
+            'operator' => 'equals',
+            'value' => 'pilihan_2',
+        ];
+        $schema['pages'][0]['fields'] = [$firstSource, $secondSource, $firstTarget, $secondTarget];
+        $form->versions()->firstOrFail()->update(['schema' => $schema]);
+
+        Livewire::actingAs($owner)
+            ->test(FormBuilder::class, ['formId' => $form->id])
+            ->call('setTab', 'logic')
+            ->call('selectField', $firstTarget['id'])
+            ->assertSet('visibilityFieldId', $firstSource['id'])
+            ->assertSet('visibilityValue', 'pilihan_1')
+            ->call('selectField', $secondTarget['id'])
+            ->assertSet('visibilityFieldId', $secondSource['id'])
+            ->assertSet('visibilityValue', 'pilihan_2');
+    }
+
     public function test_viewer_cannot_open_or_mutate_the_builder(): void
     {
         [$viewer, $form] = $this->makeFormFor('viewer');

@@ -63,6 +63,23 @@ class FormSchemaServiceTest extends TestCase
         $schemas->validate($schema);
     }
 
+    public function test_conditional_visibility_requires_an_unconditional_choice_field_on_the_same_page(): void
+    {
+        $schemas = app(FormSchemaService::class);
+        $schema = $schemas->empty();
+        $source = $schemas->newField('select', $schema);
+        $source['settings']['options'] = [['label' => 'Ya', 'value' => 'yes']];
+        $target = $schemas->newField('text', $schema);
+        $target['visibility'] = ['field_id' => $source['id'], 'operator' => 'equals', 'value' => 'yes'];
+        $schema['pages'][0]['fields'] = [$source, $target];
+
+        $this->assertEquals($schema, $schemas->validate($schema));
+
+        $schema['pages'][0]['fields'][1]['visibility']['value'] = 'unknown';
+        $this->expectException(ValidationException::class);
+        $schemas->validate($schema);
+    }
+
     public function test_malformed_pages_are_rejected_as_validation_errors(): void
     {
         $this->expectException(ValidationException::class);

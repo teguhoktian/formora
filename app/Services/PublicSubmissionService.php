@@ -34,6 +34,31 @@ class PublicSubmissionService
             $payload['answers'] = app(SmartFieldRegistry::class)->normalizeAnswers($incomingAnswers, $fields);
         }
 
+        $fieldsById = [];
+        foreach ($fields as $field) {
+            $fieldsById[$field['id']] = $field;
+        }
+        $answers = is_array($payload['answers'] ?? null) ? $payload['answers'] : [];
+        $visibleFields = [];
+        $hiddenNames = [];
+        foreach ($fields as $field) {
+            $condition = $field['visibility'] ?? null;
+            if (is_array($condition)) {
+                $source = $fieldsById[$condition['field_id']] ?? null;
+                $sourceAnswer = is_array($source) ? ($answers[$source['name']] ?? null) : null;
+                if (! is_string($sourceAnswer) || $sourceAnswer !== $condition['value']) {
+                    $hiddenNames[$field['name']] = true;
+
+                    continue;
+                }
+            }
+            $visibleFields[] = $field;
+        }
+        $fields = $visibleFields;
+        if (is_array($payload['answers'] ?? null)) {
+            $payload['answers'] = array_diff_key($payload['answers'], $hiddenNames);
+        }
+
         $names = array_column($fields, 'name');
         $rules = [
             'website' => ['nullable', 'string', 'max:0'],

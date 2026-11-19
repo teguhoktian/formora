@@ -143,6 +143,45 @@ class PublicFormTest extends TestCase
         $this->assertSame(0, $form->submissions()->count());
     }
 
+    public function test_hidden_required_field_is_skipped_and_hidden_answer_is_not_stored(): void
+    {
+        [$form, $version] = $this->makePublishedForm([
+            ['type' => 'select', 'name' => 'request_type', 'label' => 'Jenis permohonan', 'required' => true],
+            ['type' => 'text', 'name' => 'company_name', 'label' => 'Nama perusahaan', 'required' => true],
+        ]);
+        $schema = $version->schema;
+        $source = $schema['pages'][0]['fields'][0];
+        $target = $schema['pages'][0]['fields'][1];
+        $schema['pages'][0]['fields'][0]['settings']['options'] = [
+            ['label' => 'Pribadi', 'value' => 'personal'],
+            ['label' => 'Perusahaan', 'value' => 'company'],
+        ];
+        $schema['pages'][0]['fields'][1]['visibility'] = [
+            'field_id' => $source['id'],
+            'operator' => 'equals',
+            'value' => 'company',
+        ];
+        $draft = $form->versions()->create(['version_number' => 2, 'schema' => $schema, 'is_published' => false]);
+        $published = app(FormPublishingService::class)->publishDraft($form, $draft->id, app(FormSchemaService::class));
+
+        $this->get(route('public.forms.show', $form->slug))
+            ->assertOk()
+            ->assertSee('data-visibility-source="'.$source['id'].'"', false);
+
+        $this->post(route('public.forms.submit', $form->slug), [
+            'answers' => ['request_type' => 'personal', 'company_name' => 'must-not-be-saved'],
+        ])->assertRedirect();
+
+        $submission = $form->submissions()->firstOrFail();
+        $this->assertSame(['request_type' => 'personal'], $submission->response_data);
+
+        $this->from(route('public.forms.show', $form->slug))
+            ->post(route('public.forms.submit', $form->slug), ['answers' => ['request_type' => 'company']])
+            ->assertSessionHasErrors('answers.company_name');
+        $this->assertSame(1, $form->submissions()->count());
+        $this->assertNotNull($published->fresh());
+    }
+
     public function test_paused_and_unpublished_forms_are_not_publicly_accessible(): void
     {
         [$pausedForm] = $this->makePublishedForm([

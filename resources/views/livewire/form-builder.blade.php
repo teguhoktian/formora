@@ -35,14 +35,12 @@
 
         <nav class="mx-auto flex max-w-[1600px] items-center gap-1 overflow-x-auto px-4 sm:px-6" aria-label="Tab form builder">
             @foreach (['build' => 'Bangun', 'design' => 'Desain', 'logic' => 'Logika', 'settings' => 'Pengaturan', 'preview' => 'Pratinjau'] as $tab => $label)
-                @if (in_array($tab, ['build', 'design', 'settings', 'preview'], true))
+                @if (in_array($tab, ['build', 'design', 'logic', 'settings', 'preview'], true))
                     <button type="button" wire:click="setTab('{{ $tab }}')" @class([
                         'border-b-2 px-4 py-3 text-sm font-semibold',
                         'border-emerald-600 text-emerald-800' => $activeTab === $tab,
                         'border-transparent text-slate-500 hover:text-slate-800' => $activeTab !== $tab,
                     ]) aria-current="{{ $activeTab === $tab ? 'page' : 'false' }}">{{ $label }}</button>
-                @elseif ($tab === 'logic')
-                    <span class="cursor-not-allowed border-b-2 border-transparent px-4 py-3 text-sm text-slate-300" aria-disabled="true">{{ $label }} <span class="text-[9px] uppercase">Segera hadir</span></span>
                 @endif
             @endforeach
         </nav>
@@ -58,7 +56,45 @@
         <div class="mx-auto mt-4 max-w-5xl px-4 sm:px-6" role="alert"><p class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">Periksa kembali isian. Perubahan belum tersimpan.</p></div>
     @endif
 
-    @if ($activeTab === 'design')
+    @if ($activeTab === 'logic')
+        <main class="mx-auto grid max-w-5xl gap-6 px-4 py-8 sm:px-6 lg:grid-cols-[minmax(0,0.85fr)_minmax(0,1.15fr)] lg:py-12">
+            <section class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6" aria-labelledby="logic-fields-heading">
+                <p class="text-sm font-medium text-emerald-700">Aturan tampilan</p>
+                <h1 id="logic-fields-heading" class="mt-1 text-xl font-semibold text-slate-950">Pilih field</h1>
+                <p class="mt-2 text-sm leading-6 text-slate-500">Pilih field yang hanya ditampilkan saat responden memilih jawaban tertentu.</p>
+                <ul class="mt-5 space-y-2">
+                    @forelse ($activePage['fields'] as $field)
+                        <li><button type="button" wire:click="selectField('{{ $field['id'] }}')" @class(['w-full rounded-xl border px-3 py-3 text-left', 'border-emerald-300 bg-emerald-50' => $selectedFieldId === $field['id'], 'border-slate-200 hover:bg-slate-50' => $selectedFieldId !== $field['id']])><span class="block text-sm font-semibold text-slate-800">{{ $field['label'] }}</span><span class="mt-1 block text-xs text-slate-500">{{ $field['name'] }} · {{ $field['type'] }}</span></button></li>
+                    @empty
+                        <li class="rounded-xl border border-dashed border-slate-300 px-4 py-8 text-center text-sm text-slate-500">Tambahkan field terlebih dahulu.</li>
+                    @endforelse
+                </ul>
+            </section>
+            <section wire:key="logic-rule-{{ $selectedFieldId ?? 'none' }}" class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6" aria-labelledby="logic-rule-heading">
+                <h2 id="logic-rule-heading" class="text-lg font-semibold text-slate-950">Kondisi field</h2>
+                @if ($selectedField)
+                    @php
+                        $visibilitySource = collect($conditionFields)->firstWhere('id', $visibilityFieldId);
+                    @endphp
+                    <p class="mt-1 text-sm text-slate-500">Atur kapan “{{ $selectedField['label'] }}” terlihat. Aturan saat ini hanya memakai field pilihan pada halaman yang sama.</p>
+                    @if (count($conditionFields) > 0)
+                        <div class="mt-6 space-y-4">
+                            <div><label for="visibility-source" class="mb-1.5 block text-sm font-medium text-slate-700">Tampilkan jika jawaban pada</label><select id="visibility-source" wire:key="visibility-source-{{ $selectedFieldId }}" wire:model.live="visibilityFieldId" class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm"><option value="">Selalu tampil</option>@foreach ($conditionFields as $conditionField)<option value="{{ $conditionField['id'] }}">{{ $conditionField['label'] }}</option>@endforeach</select></div>
+                            @if ($visibilityFieldId !== '' && $visibilitySource)
+                                <div><label for="visibility-value" class="mb-1.5 block text-sm font-medium text-slate-700">sama dengan</label><select id="visibility-value" wire:key="visibility-value-{{ $selectedFieldId }}-{{ $visibilityFieldId }}" wire:model.live="visibilityValue" class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm"><option value="">Pilih jawaban</option>@foreach ($visibilitySource['settings']['options'] as $option)<option value="{{ $option['value'] }}">{{ $option['label'] }}</option>@endforeach</select></div>
+                            @endif
+                            <button type="button" wire:click="saveVisibilityCondition" wire:loading.attr="disabled" class="rounded-xl bg-emerald-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-emerald-800 disabled:opacity-50">Simpan aturan</button>
+                            @if (is_array($selectedField['visibility'] ?? null))<p class="text-xs text-slate-500">Field ini saat ini tampil jika pilihan tersebut cocok.</p>@else<p class="text-xs text-slate-500">Tanpa aturan, field selalu tampil.</p>@endif
+                        </div>
+                    @else
+                        <div class="mt-6 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm leading-6 text-amber-900">Tambahkan field Dropdown atau Pilihan tunggal pada halaman ini sebagai pemicu. Field pemicu harus selalu terlihat.</div>
+                    @endif
+                @else
+                    <p class="mt-3 text-sm text-slate-500">Pilih field di sebelah kiri untuk mengatur kondisi tampilnya.</p>
+                @endif
+            </section>
+        </main>
+    @elseif ($activeTab === 'design')
         <main class="mx-auto grid max-w-5xl gap-6 px-4 py-8 sm:px-6 lg:grid-cols-[minmax(0,1fr)_minmax(320px,0.9fr)] lg:py-12">
             <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
                 <p class="text-sm font-medium text-emerald-700">Tampilan form</p>

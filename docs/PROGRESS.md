@@ -311,7 +311,7 @@ Status: batch ini selesai; menunggu persetujuan sebelum batch fitur berikutnya.
 - Menambahkan halaman katalog Smart Fields dari registry yang sudah ada. Halaman menampilkan field yang didukung, metadata, penanda data sensitif, dan keterangan bahwa pemeriksaan format bukan verifikasi identitas resmi.
 - Menambahkan halaman Analitik berbasis agregat workspace aktif: jumlah form, form terbit, submission total dan 30 hari terakhir, ringkasan status, tren enam bulan, serta form dengan respons terbanyak. Query tidak mengambil isi jawaban submission.
 - Mengganti stub sidebar Smart Fields dan Analitik dengan tautan aktif.
-- Pilihan pengguna untuk fitur Logika builder: tampilkan/sembunyikan field secara kondisional. Fitur ini belum dikerjakan dan membutuhkan desain schema serta validasi renderer.
+- Pada saat batch ini dicatat, pilihan pengguna untuk fitur Logika builder adalah menampilkan/menyembunyikan field secara kondisional; implementasi dicatat pada batch lanjutan di bawah.
 
 ### Validasi batch
 
@@ -324,7 +324,6 @@ Status: batch ini selesai; menunggu persetujuan sebelum batch fitur berikutnya.
 
 ### Backlog fitur berikutnya
 
-- Fitur Logika builder untuk menampilkan/menyembunyikan field berdasarkan jawaban field lain; perlu schema, validasi server-side, renderer publik, builder UI, dan tes.
 - Tab Design builder masih belum berfungsi.
 - Pencarian pada header starter merupakan view/layout yang tidak dipakai oleh halaman aktif; belum diputuskan apakah akan diaktifkan sebagai pencarian produk.
 
@@ -335,7 +334,7 @@ Status: implementasi dan validasi selesai.
 - Menu Respons kini membuka halaman workspace dengan filter status dan pagination. Daftar hanya menampilkan metadata respons dan judul form; isi jawaban tidak diambil.
 - Menu Workspace kini membuka halaman khusus untuk melihat workspace aktif, berpindah workspace, membuat workspace, serta mengelola anggota/role dan transfer ownership melalui endpoint yang sudah memiliki otorisasi.
 - Tab Desain builder diaktifkan dengan warna aksen (hijau/biru/ungu), lebar konten (ringkas/standar/lebar), preview tampilan, autosave, dan penerapan tema pada renderer publik.
-- Tab Logika masih belum tersedia. IMPLEMENTATION_PLAN.md hanya mencantumkan nama tab Logic pada Tahap 5 dan belum menetapkan perilaku maupun acceptance criteria. Pilihan pengguna adalah kondisi tampil/sembunyi field; dicatat sebagai backlog fitur builder pasca-MVP, belum masuk implementasi batch ini.
+- Pada batch ini tab Logika masih belum tersedia. IMPLEMENTATION_PLAN.md hanya mencantumkan nama tab Logic pada Tahap 5 dan belum menetapkan perilaku maupun acceptance criteria. Pilihan pengguna untuk kondisi tampil/sembunyi field dicatat sebagai backlog saat itu.
 
 - `php artisan test --compact tests/Feature/WorkspaceNavigationAndDesignTest.php` — lulus, 3 test / 9 assertion.
 - `php artisan test --compact tests/Feature/FormBuilderTest.php tests/Feature/PublicFormTest.php tests/Feature/SubmissionManagementTest.php tests/Feature/WorkspaceNavigationAndDesignTest.php` — lulus, 24 test / 113 assertion.
@@ -343,5 +342,31 @@ Status: implementasi dan validasi selesai.
 - `composer run types:check --no-interaction` — lulus, PHPStan 0 error.
 - `npm run build` — lulus; ada peringatan opsional `fontaine` untuk fallback font.
 - `php artisan route:list --path=responses` dan `php artisan route:list --path=workspace` — route index tersedia.
+- `git diff --check` — lulus.
+- Tidak ada migration atau perubahan database.
+
+### Perbaikan — pilihan pemicu Logika saat berpindah field
+
+- Elemen dropdown editor Logika sebelumnya memakai identitas DOM tetap. Saat target diganti, Livewire dapat mempertahankan pilihan DOM sebelumnya walaupun state server sudah memuat aturan target baru. Tambahkan `wire:key` yang mengikuti target dan field pemicu agar kontrol dimuat ulang sesuai aturan tiap field.
+- Menambahkan regression test bahwa dua target memuat field pemicu dan nilai kondisi masing-masing.
+- `php artisan test --compact tests/Feature/FormBuilderTest.php` — lulus, 10 test / 25 assertion.
+- `vendor/bin/pint --test app/Livewire/FormBuilder.php tests/Feature/FormBuilderTest.php` — lulus.
+- `git diff --check` — lulus.
+
+## Penyempurnaan fitur pasca-MVP — Logika tampil/sembunyi field
+
+Status: implementasi selesai untuk kondisi satu aturan per field pada halaman yang sama.
+
+- Tab Logika builder dapat memilih field target dan mengatur agar field tersebut tampil ketika field Dropdown atau pilihan tunggal bernilai sama dengan opsi tertentu. Kondisi dapat dihapus; server memvalidasi field sumber, halaman, tipe, dan opsi.
+- Schema form menyimpan aturan visibilitas pada definisi field, tanpa migration database.
+- Renderer publik memperbarui visibilitas saat jawaban berubah. Kontrol tersembunyi dinonaktifkan dan nilainya dibersihkan; server juga melewati validasi required untuk field tersembunyi serta membuang jawaban tersembunyi yang dipaksakan melalui request.
+- Batas cakupan: belum mendukung kondisi lintas halaman, operator selain sama dengan, beberapa kondisi/kelompok AND-OR, atau menyembunyikan field pemicu. Dropdown dan pilihan tunggal adalah tipe pemicu yang didukung.
+
+### Validasi batch
+
+- `php artisan test --compact tests/Unit/FormSchemaServiceTest.php tests/Feature/FormBuilderTest.php tests/Feature/PublicFormTest.php` — lulus, 24 test / 97 assertion.
+- `composer run types:check --no-interaction` — lulus, PHPStan 0 error.
+- `vendor/bin/pint --test app/Livewire/FormBuilder.php app/Services/FormSchemaService.php app/Services/PublicSubmissionService.php tests/Feature/FormBuilderTest.php tests/Feature/PublicFormTest.php tests/Unit/FormSchemaServiceTest.php` — lulus.
+- `npm run build` — lulus; peringatan opsional `fontaine` untuk fallback font (dijalankan selama batch sebelum perbaikan PHP-only).
 - `git diff --check` — lulus.
 - Tidak ada migration atau perubahan database.

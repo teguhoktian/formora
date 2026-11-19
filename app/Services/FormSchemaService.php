@@ -68,6 +68,7 @@ class FormSchemaService
                 ]]
                 : [],
             'validation' => [],
+            'visibility' => null,
         ];
     }
 
@@ -84,7 +85,7 @@ class FormSchemaService
             'pages.*.title' => ['required', 'string', 'max:120'],
             'pages.*.description' => ['nullable', 'string', 'max:500'],
             'pages.*.fields' => ['present', 'array', 'max:100'],
-            'pages.*.fields.*' => ['required', 'array:id,type,name,label,required,help_text,default_value,settings,validation'],
+            'pages.*.fields.*' => ['required', 'array:id,type,name,label,required,help_text,default_value,settings,validation,visibility'],
             'pages.*.fields.*.id' => ['required', 'uuid', 'distinct'],
             'pages.*.fields.*.type' => ['required', Rule::in(self::FIELD_TYPES)],
             'pages.*.fields.*.name' => ['required', 'string', 'regex:/^[a-z][a-z0-9_]{0,63}$/'],
@@ -94,6 +95,10 @@ class FormSchemaService
             'pages.*.fields.*.default_value' => ['nullable', 'string', 'max:500'],
             'pages.*.fields.*.settings' => ['present', 'array'],
             'pages.*.fields.*.validation' => ['present', 'array'],
+            'pages.*.fields.*.visibility' => ['nullable', 'array:field_id,operator,value'],
+            'pages.*.fields.*.visibility.field_id' => ['required_with:pages.*.fields.*.visibility', 'uuid'],
+            'pages.*.fields.*.visibility.operator' => ['required_with:pages.*.fields.*.visibility', Rule::in(['equals'])],
+            'pages.*.fields.*.visibility.value' => ['required_with:pages.*.fields.*.visibility', 'string', 'max:64'],
             'settings' => ['required', 'array:submit_label,success_message,appearance'],
             'settings.submit_label' => ['required', 'string', 'max:80'],
             'settings.success_message' => ['required', 'string', 'max:500'],
@@ -181,6 +186,43 @@ class FormSchemaService
 
                     if (($field['validation'] ?? []) !== []) {
                         $validator->errors()->add("{$fieldPath}.validation", 'Aturan validasi tambahan belum tersedia.');
+                    }
+                }
+
+                $fieldsById = [];
+                foreach ($fields as $field) {
+                    if (is_array($field) && is_string($field['id'] ?? null)) {
+                        $fieldsById[$field['id']] = $field;
+                    }
+                }
+
+                foreach ($fields as $fieldIndex => $field) {
+                    if (! is_array($field) || ! is_array($field['visibility'] ?? null)) {
+                        continue;
+                    }
+
+                    $condition = $field['visibility'];
+                    $path = "pages.{$pageIndex}.fields.{$fieldIndex}.visibility";
+                    $sourceId = $condition['field_id'] ?? null;
+                    $source = is_string($sourceId) ? ($fieldsById[$sourceId] ?? null) : null;
+                    if ($source === null || $source['id'] === ($field['id'] ?? null)) {
+                        $validator->errors()->add($path, 'Pilih field pemicu lain pada halaman yang sama.');
+
+                        continue;
+                    }
+                    if (! in_array($source['type'] ?? null, ['select', 'radio'], true)) {
+                        $validator->errors()->add($path, 'Field pemicu harus berupa pilihan dropdown atau pilihan tunggal.');
+
+                        continue;
+                    }
+                    if (is_array($source['visibility'] ?? null)) {
+                        $validator->errors()->add($path, 'Field pemicu harus selalu terlihat.');
+                    }
+
+                    $sourceOptions = $source['settings']['options'] ?? [];
+                    $allowedValues = is_array($sourceOptions) ? array_column($sourceOptions, 'value') : [];
+                    if (! is_string($condition['value'] ?? null) || ! in_array($condition['value'], $allowedValues, true)) {
+                        $validator->errors()->add($path.'.value', 'Pilih jawaban yang tersedia pada field pemicu.');
                     }
                 }
             }

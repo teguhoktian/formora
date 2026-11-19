@@ -42,6 +42,10 @@ class FormBuilder extends Component
 
     public string $optionLines = '';
 
+    public string $visibilityFieldId = '';
+
+    public string $visibilityValue = '';
+
     public string $pageTitle = '';
 
     public string $submitLabel = 'Kirim';
@@ -121,6 +125,30 @@ class FormBuilder extends Component
         $this->updateSelectedField('settings', ['options' => $options]);
     }
 
+    public function updatedVisibilityFieldId(string $value): void
+    {
+        if ($value === '') {
+            $this->visibilityValue = '';
+
+            return;
+        }
+
+        $schema = $this->schema();
+        $pageIndex = $this->pageIndex($schema, $this->selectedPageId);
+        $source = null;
+        foreach ($schema['pages'][$pageIndex]['fields'] as $field) {
+            if ($field['id'] === $value) {
+                $source = $field;
+                break;
+            }
+        }
+
+        $allowedValues = is_array($source) ? array_column($source['settings']['options'] ?? [], 'value') : [];
+        if (! in_array($this->visibilityValue, $allowedValues, true)) {
+            $this->visibilityValue = '';
+        }
+    }
+
     public function updatedPageTitle(string $value): void
     {
         $this->attemptSave(function () use ($value): void {
@@ -154,8 +182,40 @@ class FormBuilder extends Component
 
     public function setTab(string $tab): void
     {
-        abort_unless(in_array($tab, ['build', 'design', 'settings', 'preview'], true), 422);
+        abort_unless(in_array($tab, ['build', 'design', 'logic', 'settings', 'preview'], true), 422);
         $this->activeTab = $tab;
+    }
+
+    public function saveVisibilityCondition(FormSchemaService $schemas): void
+    {
+        $this->authorizeCurrentForm();
+        $this->attemptSave(function () use ($schemas): void {
+            abort_if($this->selectedFieldId === null, 422, 'Pilih field yang akan diatur.');
+            $schema = $this->schema();
+            $pageIndex = $this->pageIndex($schema, $this->selectedPageId);
+            $fieldIndex = $this->fieldIndex($schema['pages'][$pageIndex]['fields'], $this->selectedFieldId);
+
+            if ($this->visibilityFieldId === '') {
+                $schema['pages'][$pageIndex]['fields'][$fieldIndex]['visibility'] = null;
+            } else {
+                $validated = validator([
+                    'field_id' => $this->visibilityFieldId,
+                    'value' => $this->visibilityValue,
+                ], [
+                    'field_id' => ['required', 'uuid'],
+                    'value' => ['required', 'string', 'max:64'],
+                ])->validate();
+                $schema['pages'][$pageIndex]['fields'][$fieldIndex]['visibility'] = [
+                    'field_id' => $validated['field_id'],
+                    'operator' => 'equals',
+                    'value' => $validated['value'],
+                ];
+            }
+
+            $schema = $schemas->validate($schema);
+            $this->saveSchema($schema, schemas: $schemas);
+            $this->syncFieldDraft($schema['pages'][$pageIndex]['fields'][$fieldIndex]);
+        });
     }
 
     public function publishDraft(string $expectedDraftId, FormPublishingService $publishing, FormSchemaService $schemas): void
@@ -334,6 +394,12 @@ class FormBuilder extends Component
             'form' => $form,
             'schema' => $schema,
             'activePage' => $schema['pages'][$pageIndex],
+            'conditionFields' => array_values(array_filter(
+                $schema['pages'][$pageIndex]['fields'],
+                fn (array $field): bool => in_array($field['type'], ['select', 'radio'], true)
+                    && ! is_array($field['visibility'] ?? null)
+                    && $field['id'] !== $this->selectedFieldId,
+            )),
             'selectedField' => $this->selectedField($schema),
             'fieldTypes' => FormSchemaService::FIELD_TYPES,
             'smartFieldDefinitions' => app(SmartFieldRegistry::class)->definitions(),
@@ -510,6 +576,8 @@ class FormBuilder extends Component
         $this->fieldRequired = $field['required'];
         $this->fieldHelpText = $field['help_text'] ?? '';
         $this->optionLines = implode("\n", array_column($field['settings']['options'] ?? [], 'label'));
+        $this->visibilityFieldId = $field['visibility']['field_id'] ?? '';
+        $this->visibilityValue = $field['visibility']['value'] ?? '';
     }
 
     private function clearFieldDraft(): void
@@ -519,5 +587,7 @@ class FormBuilder extends Component
         $this->fieldRequired = false;
         $this->fieldHelpText = '';
         $this->optionLines = '';
+        $this->visibilityFieldId = '';
+        $this->visibilityValue = '';
     }
 }
