@@ -35,13 +35,13 @@
 
         <nav class="mx-auto flex max-w-[1600px] items-center gap-1 overflow-x-auto px-4 sm:px-6" aria-label="Tab form builder">
             @foreach (['build' => 'Bangun', 'design' => 'Desain', 'logic' => 'Logika', 'settings' => 'Pengaturan', 'preview' => 'Pratinjau'] as $tab => $label)
-                @if (in_array($tab, ['build', 'settings', 'preview'], true))
+                @if (in_array($tab, ['build', 'design', 'settings', 'preview'], true))
                     <button type="button" wire:click="setTab('{{ $tab }}')" @class([
                         'border-b-2 px-4 py-3 text-sm font-semibold',
                         'border-emerald-600 text-emerald-800' => $activeTab === $tab,
                         'border-transparent text-slate-500 hover:text-slate-800' => $activeTab !== $tab,
                     ]) aria-current="{{ $activeTab === $tab ? 'page' : 'false' }}">{{ $label }}</button>
-                @else
+                @elseif ($tab === 'logic')
                     <span class="cursor-not-allowed border-b-2 border-transparent px-4 py-3 text-sm text-slate-300" aria-disabled="true">{{ $label }} <span class="text-[9px] uppercase">Segera hadir</span></span>
                 @endif
             @endforeach
@@ -58,11 +58,35 @@
         <div class="mx-auto mt-4 max-w-5xl px-4 sm:px-6" role="alert"><p class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">Periksa kembali isian. Perubahan belum tersimpan.</p></div>
     @endif
 
-    @if ($activeTab === 'preview')
-        <main class="mx-auto max-w-3xl px-4 py-8 sm:px-6 lg:py-12">
+    @if ($activeTab === 'design')
+        <main class="mx-auto grid max-w-5xl gap-6 px-4 py-8 sm:px-6 lg:grid-cols-[minmax(0,1fr)_minmax(320px,0.9fr)] lg:py-12">
+            <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
+                <p class="text-sm font-medium text-emerald-700">Tampilan form</p>
+                <h1 class="mt-2 text-xl font-semibold text-slate-950">Atur gaya form publik</h1>
+                <p class="mt-2 text-sm leading-6 text-slate-500">Perubahan tersimpan otomatis dan digunakan pada tautan form publik. Pilihan warna dibatasi agar kontras tetap terbaca.</p>
+                <div class="mt-6 space-y-5">
+                    <div><label for="design-accent" class="mb-1.5 block text-sm font-medium text-slate-700">Warna aksen</label><select id="design-accent" wire:model.live="designAccent" class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm"><option value="emerald">Hijau</option><option value="blue">Biru</option><option value="violet">Ungu</option></select></div>
+                    <div><label for="design-width" class="mb-1.5 block text-sm font-medium text-slate-700">Lebar konten</label><select id="design-width" wire:model.live="designWidth" class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm"><option value="compact">Ringkas</option><option value="standard">Standar</option><option value="wide">Lebar</option></select></div>
+                </div>
+            </section>
+            @php
+                $previewAccent = match ($designAccent) { 'blue' => ['bg' => 'bg-blue-700', 'text' => 'text-blue-800'], 'violet' => ['bg' => 'bg-violet-700', 'text' => 'text-violet-800'], default => ['bg' => 'bg-emerald-700', 'text' => 'text-emerald-800'] };
+                $previewWidth = match ($designWidth) { 'compact' => 'max-w-xs', 'wide' => 'max-w-2xl', default => 'max-w-md' };
+            @endphp
+            <section class="rounded-2xl border border-slate-200 bg-slate-100 p-4 sm:p-6" aria-label="Contoh tampilan">
+                <p class="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-500">Contoh</p>
+                <div class="{{ $previewWidth }} mx-auto overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"><div class="border-b border-slate-100 p-5"><p class="text-xs font-semibold {{ $previewAccent['text'] }}">FORMORA</p><h2 class="mt-2 text-lg font-semibold text-slate-950">{{ $form->title }}</h2></div><div class="space-y-4 p-5"><div><p class="mb-1 text-sm font-medium text-slate-700">Nama lengkap</p><div class="h-10 rounded-lg border border-slate-300 bg-white"></div></div><button type="button" class="rounded-lg {{ $previewAccent['bg'] }} px-4 py-2 text-sm font-semibold text-white">{{ $submitLabel }}</button></div></div>
+            </section>
+        </main>
+    @elseif ($activeTab === 'preview')
+        @php
+            $previewAccent = match ($designAccent) { 'blue' => ['bg' => 'bg-blue-700', 'text' => 'text-blue-800'], 'violet' => ['bg' => 'bg-violet-700', 'text' => 'text-violet-800'], default => ['bg' => 'bg-emerald-700', 'text' => 'text-emerald-800'] };
+            $previewWidth = match ($designWidth) { 'compact' => 'max-w-xl', 'wide' => 'max-w-5xl', default => 'max-w-3xl' };
+        @endphp
+        <main class="mx-auto {{ $previewWidth }} px-4 py-8 sm:px-6 lg:py-12">
             <div class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm sm:p-10">
                 <div class="mb-8 border-b border-slate-100 pb-6">
-                    <p class="text-xs font-semibold uppercase tracking-[0.16em] text-emerald-700">Pratinjau form</p>
+                    <p class="text-xs font-semibold uppercase tracking-[0.16em] {{ $previewAccent['text'] }}">Pratinjau form</p>
                     <h1 class="mt-3 text-2xl font-semibold text-slate-950">{{ $form->title }}</h1>
                     @if ($form->description)<p class="mt-2 text-sm leading-6 text-slate-500">{{ $form->description }}</p>@endif
                 </div>
@@ -92,7 +116,7 @@
                                 <p class="rounded-xl border border-dashed border-slate-300 px-4 py-8 text-center text-sm text-slate-500">Tambahkan field untuk melihat pratinjau.</p>
                             @endforelse
                         </div>
-                        <button disabled class="mt-8 rounded-xl bg-emerald-700 px-5 py-3 text-sm font-semibold text-white">{{ $schema['settings']['submit_label'] }}</button>
+                        <button disabled class="mt-8 rounded-xl {{ $previewAccent['bg'] }} px-5 py-3 text-sm font-semibold text-white">{{ $schema['settings']['submit_label'] }}</button>
                     @endif
                 @endforeach
                 <p class="mt-5 text-xs text-slate-500">{{ $schema['settings']['success_message'] }}</p>

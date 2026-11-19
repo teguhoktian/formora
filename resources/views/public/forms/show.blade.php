@@ -9,9 +9,14 @@
     <style>[x-cloak] { display: none !important; }</style>
 </head>
 <body class="min-h-screen bg-slate-50 text-slate-900 antialiased">
-    <main class="mx-auto max-w-3xl px-4 py-8 sm:px-6 lg:py-14">
+    @php
+        $appearance = $schema['settings']['appearance'] ?? ['accent' => 'emerald', 'width' => 'standard'];
+        $publicAccent = match ($appearance['accent'] ?? 'emerald') { 'blue' => ['button' => 'bg-blue-700 hover:bg-blue-800', 'text' => 'text-blue-800', 'soft' => 'bg-blue-50'], 'violet' => ['button' => 'bg-violet-700 hover:bg-violet-800', 'text' => 'text-violet-800', 'soft' => 'bg-violet-50'], default => ['button' => 'bg-emerald-700 hover:bg-emerald-800', 'text' => 'text-emerald-800', 'soft' => 'bg-emerald-50'] };
+        $publicWidth = match ($appearance['width'] ?? 'standard') { 'compact' => 'max-w-xl', 'wide' => 'max-w-5xl', default => 'max-w-3xl' };
+    @endphp
+    <main class="mx-auto {{ $publicWidth }} px-4 py-8 sm:px-6 lg:py-14">
         <header class="mb-7 text-center">
-            <a href="{{ route('home') }}" class="text-xs font-bold uppercase tracking-[0.2em] text-emerald-700">Formora</a>
+            <a href="{{ route('home') }}" class="text-xs font-bold uppercase tracking-[0.2em] {{ $publicAccent['text'] }}">Formora</a>
         </header>
 
         <section class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
@@ -24,10 +29,10 @@
 
             @if ($referenceNumber)
                 <div class="px-6 py-12 text-center sm:px-10">
-                    <span class="mx-auto grid size-12 place-items-center rounded-full bg-emerald-50 text-2xl text-emerald-700" aria-hidden="true">✓</span>
+                    <span class="mx-auto grid size-12 place-items-center rounded-full {{ $publicAccent['soft'] }} text-2xl {{ $publicAccent['text'] }}" aria-hidden="true">✓</span>
                     <h2 class="mt-4 text-xl font-semibold text-slate-950">{{ $schema['settings']['success_message'] }}</h2>
                     <p class="mt-3 text-sm text-slate-600">Nomor referensi Anda</p>
-                    <p class="mt-1 font-mono text-lg font-semibold tracking-wide text-emerald-800">{{ $referenceNumber }}</p>
+                    <p class="mt-1 font-mono text-lg font-semibold tracking-wide {{ $publicAccent['text'] }}">{{ $referenceNumber }}</p>
                     <p class="mt-3 text-xs text-slate-400">Simpan nomor ini untuk referensi Anda.</p>
                 </div>
             @else
@@ -52,7 +57,7 @@
                         <section data-public-page="{{ $pageIndex }}" class="px-6 py-7 sm:px-10 sm:py-9" aria-label="{{ $page['title'] }}">
                             <div class="mb-7 flex items-start justify-between gap-4">
                                 <div>
-                                    <p class="text-xs font-semibold uppercase tracking-[0.14em] text-emerald-700">Halaman {{ $pageIndex + 1 }} dari {{ count($schema['pages']) }}</p>
+                                    <p class="text-xs font-semibold uppercase tracking-[0.14em] {{ $publicAccent['text'] }}">Halaman {{ $pageIndex + 1 }} dari {{ count($schema['pages']) }}</p>
                                     <h2 class="mt-2 text-xl font-semibold text-slate-950">{{ $page['title'] }}</h2>
                                     @if ($page['description'])<p class="mt-2 text-sm leading-6 text-slate-500">{{ $page['description'] }}</p>@endif
                                 </div>
@@ -144,7 +149,7 @@
                                 @if ($pageIndex < count($schema['pages']) - 1)
                                     <button type="button" data-page-next class="rounded-xl bg-emerald-700 px-5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-800">Lanjut</button>
                                 @else
-                                    <button type="submit" class="rounded-xl bg-emerald-700 px-5 py-2.5 text-sm font-semibold text-white hover:bg-emerald-800">{{ $schema['settings']['submit_label'] }}</button>
+                                    <button type="submit" class="rounded-xl {{ $publicAccent['button'] }} px-5 py-2.5 text-sm font-semibold text-white">{{ $schema['settings']['submit_label'] }}</button>
                                 @endif
                             </div>
                         </section>

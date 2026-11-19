@@ -12,6 +12,7 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Locked;
 use Livewire\Component;
@@ -47,6 +48,10 @@ class FormBuilder extends Component
 
     public string $successMessage = 'Terima kasih, data berhasil dikirim.';
 
+    public string $designAccent = 'emerald';
+
+    public string $designWidth = 'standard';
+
     public string $saveState = 'saved';
 
     public function mount(string $formId, FormBuilderService $builder, FormSchemaService $schemas): void
@@ -61,6 +66,8 @@ class FormBuilder extends Component
         $this->pageTitle = $schema['pages'][0]['title'];
         $this->submitLabel = $schema['settings']['submit_label'];
         $this->successMessage = $schema['settings']['success_message'];
+        $this->designAccent = $schema['settings']['appearance']['accent'] ?? 'emerald';
+        $this->designWidth = $schema['settings']['appearance']['width'] ?? 'standard';
         $this->selectFirstField($schema);
     }
 
@@ -135,9 +142,19 @@ class FormBuilder extends Component
         $this->updateSettings('success_message', $value, 500);
     }
 
+    public function updatedDesignAccent(string $value): void
+    {
+        $this->updateAppearance('accent', $value);
+    }
+
+    public function updatedDesignWidth(string $value): void
+    {
+        $this->updateAppearance('width', $value);
+    }
+
     public function setTab(string $tab): void
     {
-        abort_unless(in_array($tab, ['build', 'settings', 'preview'], true), 422);
+        abort_unless(in_array($tab, ['build', 'design', 'settings', 'preview'], true), 422);
         $this->activeTab = $tab;
     }
 
@@ -353,6 +370,19 @@ class FormBuilder extends Component
             $validated = validator(['value' => $value], ['value' => ['required', 'string', 'max:'.$maxLength]])->validate();
             $schema = $this->schema();
             $schema['settings'][$property] = $validated['value'];
+            $this->saveSchema($schema);
+        });
+    }
+
+    private function updateAppearance(string $property, string $value): void
+    {
+        $this->authorizeCurrentForm();
+        $allowed = $property === 'accent' ? ['emerald', 'blue', 'violet'] : ['compact', 'standard', 'wide'];
+        $this->attemptSave(function () use ($property, $value, $allowed): void {
+            $validated = validator(['value' => $value], ['value' => ['required', Rule::in($allowed)]])->validate();
+            $schema = $this->schema();
+            $schema['settings']['appearance'] ??= ['accent' => 'emerald', 'width' => 'standard'];
+            $schema['settings']['appearance'][$property] = $validated['value'];
             $this->saveSchema($schema);
         });
     }

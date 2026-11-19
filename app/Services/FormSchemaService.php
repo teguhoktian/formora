@@ -20,6 +20,7 @@ class FormSchemaService
             'settings' => [
                 'submit_label' => 'Kirim',
                 'success_message' => 'Terima kasih, data berhasil dikirim.',
+                'appearance' => ['accent' => 'emerald', 'width' => 'standard'],
             ],
         ];
     }
@@ -93,9 +94,12 @@ class FormSchemaService
             'pages.*.fields.*.default_value' => ['nullable', 'string', 'max:500'],
             'pages.*.fields.*.settings' => ['present', 'array'],
             'pages.*.fields.*.validation' => ['present', 'array'],
-            'settings' => ['required', 'array:submit_label,success_message'],
+            'settings' => ['required', 'array:submit_label,success_message,appearance'],
             'settings.submit_label' => ['required', 'string', 'max:80'],
             'settings.success_message' => ['required', 'string', 'max:500'],
+            'settings.appearance' => ['sometimes', 'array:accent,width'],
+            'settings.appearance.accent' => ['sometimes', 'required', Rule::in(['emerald', 'blue', 'violet'])],
+            'settings.appearance.width' => ['sometimes', 'required', Rule::in(['compact', 'standard', 'wide'])],
         ]);
 
         $validator->after(function ($validator) use ($schema): void {

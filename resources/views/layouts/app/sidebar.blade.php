@@ -38,13 +38,13 @@
                     <flux:sidebar.item icon="document-text" :href="route('forms.index')" :current="request()->routeIs('forms.*')" wire:navigate>
                         Form saya
                     </flux:sidebar.item>
-                    <flux:sidebar.item icon="inbox" href="{{ route('dashboard') }}#submissions" wire:navigate>
+                    <flux:sidebar.item icon="inbox" :href="route('responses.index')" :current="request()->routeIs('responses.*', 'forms.submissions.*')" wire:navigate>
                         Respons
                     </flux:sidebar.item>
                     <flux:sidebar.item icon="book-open-text" :href="route('templates.index')" :current="request()->routeIs('templates.*')" wire:navigate>
                         Template
                     </flux:sidebar.item>
-                    <flux:sidebar.item icon="building-office-2" href="{{ route('dashboard') }}#workspace" wire:navigate>
+                    <flux:sidebar.item icon="building-office-2" :href="route('workspaces.index')" :current="request()->routeIs('workspaces.*')" wire:navigate>
                         Workspace
                     </flux:sidebar.item>
                 </flux:sidebar.group>

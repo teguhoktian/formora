@@ -327,3 +327,21 @@ Status: batch ini selesai; menunggu persetujuan sebelum batch fitur berikutnya.
 - Fitur Logika builder untuk menampilkan/menyembunyikan field berdasarkan jawaban field lain; perlu schema, validasi server-side, renderer publik, builder UI, dan tes.
 - Tab Design builder masih belum berfungsi.
 - Pencarian pada header starter merupakan view/layout yang tidak dipakai oleh halaman aktif; belum diputuskan apakah akan diaktifkan sebagai pencarian produk.
+
+## Penyempurnaan fitur pasca-MVP — halaman Respons, Workspace, dan Desain builder
+
+Status: implementasi dan validasi selesai.
+
+- Menu Respons kini membuka halaman workspace dengan filter status dan pagination. Daftar hanya menampilkan metadata respons dan judul form; isi jawaban tidak diambil.
+- Menu Workspace kini membuka halaman khusus untuk melihat workspace aktif, berpindah workspace, membuat workspace, serta mengelola anggota/role dan transfer ownership melalui endpoint yang sudah memiliki otorisasi.
+- Tab Desain builder diaktifkan dengan warna aksen (hijau/biru/ungu), lebar konten (ringkas/standar/lebar), preview tampilan, autosave, dan penerapan tema pada renderer publik.
+- Tab Logika masih belum tersedia. IMPLEMENTATION_PLAN.md hanya mencantumkan nama tab Logic pada Tahap 5 dan belum menetapkan perilaku maupun acceptance criteria. Pilihan pengguna adalah kondisi tampil/sembunyi field; dicatat sebagai backlog fitur builder pasca-MVP, belum masuk implementasi batch ini.
+
+- `php artisan test --compact tests/Feature/WorkspaceNavigationAndDesignTest.php` — lulus, 3 test / 9 assertion.
+- `php artisan test --compact tests/Feature/FormBuilderTest.php tests/Feature/PublicFormTest.php tests/Feature/SubmissionManagementTest.php tests/Feature/WorkspaceNavigationAndDesignTest.php` — lulus, 24 test / 113 assertion.
+- `vendor/bin/pint --test app/Http/Controllers/SubmissionController.php app/Http/Controllers/WorkspaceController.php app/Livewire/FormBuilder.php app/Services/FormSchemaService.php routes/web.php tests/Feature/WorkspaceNavigationAndDesignTest.php` — lulus.
+- `composer run types:check --no-interaction` — lulus, PHPStan 0 error.
+- `npm run build` — lulus; ada peringatan opsional `fontaine` untuk fallback font.
+- `php artisan route:list --path=responses` dan `php artisan route:list --path=workspace` — route index tersedia.
+- `git diff --check` — lulus.
+- Tidak ada migration atau perubahan database.

@@ -33,6 +33,8 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::view('dashboard', 'dashboard')->name('dashboard');
     Route::get('smart-fields', SmartFieldsController::class)->name('smart-fields.index');
     Route::get('analytics', AnalyticsController::class)->name('analytics.index');
+    Route::get('responses', [SubmissionController::class, 'workspaceIndex'])->name('responses.index');
+    Route::get('workspace', [WorkspaceController::class, 'index'])->name('workspaces.index');
 
     Route::get('forms', [FormController::class, 'index'])->name('forms.index');
     Route::post('forms', [FormController::class, 'store'])->name('forms.store');

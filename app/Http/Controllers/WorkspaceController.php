@@ -5,15 +5,34 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use App\Models\Workspace;
 use App\Models\WorkspaceMember;
+use App\Services\CurrentWorkspace;
 use App\Services\WorkspaceService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
+use Illuminate\View\View;
 
 class WorkspaceController extends Controller
 {
+    public function index(Request $request, CurrentWorkspace $currentWorkspace): View
+    {
+        $workspace = $currentWorkspace->get($request->user(), $request);
+        abort_if($workspace === null, 404);
+        Gate::authorize('view', $workspace);
+
+        $workspace->load(['workspaceMembers.user:id,name,email']);
+
+        return view('workspaces.index', [
+            'workspace' => $workspace,
+            'membership' => $workspace->workspaceMembers->firstWhere('user_id', $request->user()->id),
+            'workspaces' => $request->user()->workspaces()->orderBy('name')->get(['workspaces.id', 'workspaces.name']),
+            'canManageMembers' => $request->user()->can('manageMembers', $workspace),
+            'canTransferOwnership' => $request->user()->can('transferOwnership', $workspace),
+        ]);
+    }
+
     public function store(Request $request, WorkspaceService $workspaces): RedirectResponse
     {
         Gate::authorize('create', Workspace::class);

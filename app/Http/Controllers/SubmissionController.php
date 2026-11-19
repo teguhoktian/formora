@@ -19,6 +19,27 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class SubmissionController extends Controller
 {
+    public function workspaceIndex(Request $request, CurrentWorkspace $currentWorkspace): View
+    {
+        $workspace = $currentWorkspace->get($request->user(), $request);
+        abort_if($workspace === null, 404);
+
+        $filters = $request->validate([
+            'status' => ['nullable', Rule::in(['new', 'in_review', 'approved', 'rejected', 'completed'])],
+        ]);
+
+        $submissions = FormSubmission::query()
+            ->select(['id', 'workspace_id', 'form_id', 'form_version_id', 'status', 'reference_number', 'created_at'])
+            ->with('form:id,title')
+            ->where('workspace_id', $workspace->id)
+            ->when($filters['status'] ?? null, fn ($query, $status) => $query->where('status', $status))
+            ->latest()
+            ->paginate(25)
+            ->withQueryString();
+
+        return view('responses.index', compact('workspace', 'submissions', 'filters'));
+    }
+
     public function index(Request $request, Form $form, CurrentWorkspace $currentWorkspace): View
     {
         $form = $this->authorizedForm($request, $form, $currentWorkspace);
