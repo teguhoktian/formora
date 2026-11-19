@@ -46,6 +46,9 @@ class FormBuilder extends Component
 
     public string $visibilityValue = '';
 
+    /** @var array<string, mixed> */
+    public array $fieldValidation = [];
+
     public string $pageTitle = '';
 
     public string $submitLabel = 'Kirim';
@@ -212,6 +215,39 @@ class FormBuilder extends Component
                 ];
             }
 
+            $schema = $schemas->validate($schema);
+            $this->saveSchema($schema, schemas: $schemas);
+            $this->syncFieldDraft($schema['pages'][$pageIndex]['fields'][$fieldIndex]);
+        });
+    }
+
+    public function saveFieldValidation(FormSchemaService $schemas): void
+    {
+        $this->authorizeCurrentForm();
+        $this->attemptSave(function () use ($schemas): void {
+            abort_if($this->selectedFieldId === null, 422, 'Pilih field yang akan diatur.');
+            $schema = $this->schema();
+            $pageIndex = $this->pageIndex($schema, $this->selectedPageId);
+            $fieldIndex = $this->fieldIndex($schema['pages'][$pageIndex]['fields'], $this->selectedFieldId);
+            $validation = array_filter($this->fieldValidation, fn (mixed $value): bool => $value !== '' && $value !== null && $value !== []);
+            if (($validation['operator'] ?? null) === 'between') {
+                unset($validation['value']);
+            } else {
+                unset($validation['min'], $validation['max']);
+            }
+            if (($validation['operator'] ?? null) === null) {
+                unset($validation['value'], $validation['min'], $validation['max']);
+            }
+            if (isset($validation['exact_selections'])) {
+                unset($validation['min_selections'], $validation['max_selections']);
+            }
+            if (isset($validation['pattern']) && ! isset($validation['pattern_mode'])) {
+                $validation['pattern_mode'] = 'matches';
+            }
+            if (! isset($validation['pattern'])) {
+                unset($validation['pattern_mode']);
+            }
+            $schema['pages'][$pageIndex]['fields'][$fieldIndex]['validation'] = $validation;
             $schema = $schemas->validate($schema);
             $this->saveSchema($schema, schemas: $schemas);
             $this->syncFieldDraft($schema['pages'][$pageIndex]['fields'][$fieldIndex]);
@@ -401,6 +437,7 @@ class FormBuilder extends Component
                     && $field['id'] !== $this->selectedFieldId,
             )),
             'selectedField' => $this->selectedField($schema),
+            'validationFileTypes' => ['pdf' => 'PDF', 'jpg' => 'JPG', 'jpeg' => 'JPEG', 'png' => 'PNG', 'doc' => 'DOC', 'docx' => 'DOCX'],
             'fieldTypes' => FormSchemaService::FIELD_TYPES,
             'smartFieldDefinitions' => app(SmartFieldRegistry::class)->definitions(),
             'canPublish' => auth()->user()?->can('publish', $form) ?? false,
@@ -578,6 +615,7 @@ class FormBuilder extends Component
         $this->optionLines = implode("\n", array_column($field['settings']['options'] ?? [], 'label'));
         $this->visibilityFieldId = $field['visibility']['field_id'] ?? '';
         $this->visibilityValue = $field['visibility']['value'] ?? '';
+        $this->fieldValidation = $field['validation'] ?? [];
     }
 
     private function clearFieldDraft(): void
@@ -589,5 +627,6 @@ class FormBuilder extends Component
         $this->optionLines = '';
         $this->visibilityFieldId = '';
         $this->visibilityValue = '';
+        $this->fieldValidation = [];
     }
 }

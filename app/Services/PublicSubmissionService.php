@@ -67,6 +67,7 @@ class PublicSubmissionService
                 : ['required', 'array:'.implode(',', $names)],
         ];
         $attributes = [];
+        $messages = [];
 
         foreach ($fields as $field) {
             $key = 'answers.'.$field['name'];
@@ -91,6 +92,12 @@ class PublicSubmissionService
                     break;
                 case 'date':
                     $rules[$key] = [$presentRule, 'date_format:Y-m-d'];
+                    if (isset($field['validation']['min_date'])) {
+                        $rules[$key][] = 'after_or_equal:'.$field['validation']['min_date'];
+                    }
+                    if (isset($field['validation']['max_date'])) {
+                        $rules[$key][] = 'before_or_equal:'.$field['validation']['max_date'];
+                    }
                     break;
                 case 'select':
                 case 'radio':
@@ -102,10 +109,30 @@ class PublicSubmissionService
                     $rules[$key] = $field['required']
                         ? ['required', 'array', 'min:1', 'max:100']
                         : ['sometimes', 'array', 'max:100'];
+                    $validation = $field['validation'] ?? [];
+                    if (isset($validation['exact_selections'])) {
+                        $rules[$key][] = 'size:'.$validation['exact_selections'];
+                    } else {
+                        if (isset($validation['min_selections'])) {
+                            $rules[$key][] = 'min:'.$validation['min_selections'];
+                        }
+                        if (isset($validation['max_selections'])) {
+                            $rules[$key][] = 'max:'.$validation['max_selections'];
+                        }
+                    }
                     $rules[$key.'.*'] = ['string', Rule::in($allowed)];
                     break;
                 case 'file':
-                    $rules[$key] = [$presentRule, 'file', 'mimes:pdf,jpg,jpeg,png,doc,docx', 'max:10240'];
+                    $validation = $field['validation'] ?? [];
+                    $maxFiles = (int) ($validation['max_files'] ?? 1);
+                    $extensions = $validation['allowed_types'] ?? ['pdf', 'jpg', 'jpeg', 'png', 'doc', 'docx'];
+                    $maxSize = (int) ($validation['max_size_kb'] ?? 10240);
+                    if ($maxFiles > 1) {
+                        $rules[$key] = $field['required'] ? ['required', 'array', 'min:1', 'max:'.$maxFiles] : ['sometimes', 'array', 'max:'.$maxFiles];
+                        $rules[$key.'.*'] = ['file', 'mimes:'.implode(',', $extensions), 'max:'.$maxSize];
+                    } else {
+                        $rules[$key] = [$presentRule, 'file', 'mimes:'.implode(',', $extensions), 'max:'.$maxSize];
+                    }
                     break;
                 case 'smart_address':
                     $regions = app(IndonesiaRegionCatalog::class);
@@ -139,9 +166,15 @@ class PublicSubmissionService
                     }
                     break;
             }
+
+            $fieldMessage = $field['validation']['custom_message'] ?? null;
+            if (is_string($fieldMessage) && $fieldMessage !== '') {
+                $messages[$key] = $fieldMessage;
+                $messages[$key.'.*'] = $fieldMessage;
+            }
         }
 
-        $validator = Validator::make($payload, $rules, [
+        $validator = Validator::make($payload, $rules, $messages + [
             'required' => 'Isian :attribute wajib diisi.',
             'digits' => 'Isian :attribute harus terdiri dari :digits digit angka.',
             'regex' => 'Format :attribute tidak valid.',
@@ -157,19 +190,83 @@ class PublicSubmissionService
             'max.file' => 'Ukuran file :attribute melebihi batas.',
             'max.string' => 'Isian :attribute melewati batas karakter.',
         ])->setAttributeNames($attributes);
-        $validator->after(function ($validator) use ($payload): void {
+        $validator->after(function ($validator) use ($payload, $fields): void {
             $totalBytes = 0;
             $answers = $payload['answers'] ?? [];
             if (is_array($answers)) {
                 foreach ($answers as $answer) {
-                    if ($answer instanceof UploadedFile) {
-                        $totalBytes += $answer->getSize();
+                    foreach (is_array($answer) ? $answer : [$answer] as $file) {
+                        if ($file instanceof UploadedFile) {
+                            $totalBytes += $file->getSize();
+                        }
                     }
                 }
             }
 
             if ($totalBytes > 25 * 1024 * 1024) {
                 $validator->errors()->add('answers', 'Total ukuran file maksimal 25 MB.');
+            }
+
+            foreach ($fields as $field) {
+                $name = $field['name'];
+                $validation = $field['validation'] ?? [];
+                $value = data_get($payload, 'answers.'.$name);
+                if ($value === null || $value === '') {
+                    continue;
+                }
+                $errorKey = 'answers.'.$name;
+                $custom = is_string($validation['custom_message'] ?? null) && $validation['custom_message'] !== ''
+                    ? $validation['custom_message']
+                    : null;
+                $fail = fn (string $message) => $validator->errors()->add($errorKey, $custom ?? $message);
+
+                if (in_array($field['type'], ['text', 'textarea'], true) && is_string($value)) {
+                    $length = mb_strlen($value);
+                    if (isset($validation['min_length']) && $length < (int) $validation['min_length']) {
+                        $fail('Jawaban '.$field['label'].' terlalu pendek.');
+                    }
+                    if (isset($validation['max_length']) && $length > (int) $validation['max_length']) {
+                        $fail('Jawaban '.$field['label'].' terlalu panjang.');
+                    }
+                    if (isset($validation['contains']) && ! str_contains(mb_strtolower($value), mb_strtolower($validation['contains']))) {
+                        $fail('Jawaban '.$field['label'].' harus memuat teks yang diminta.');
+                    }
+                    if (isset($validation['not_contains']) && str_contains(mb_strtolower($value), mb_strtolower($validation['not_contains']))) {
+                        $fail('Jawaban '.$field['label'].' memuat teks yang tidak diizinkan.');
+                    }
+                    if (isset($validation['pattern'])) {
+                        $matches = preg_match('~'.$validation['pattern'].'~u', $value) === 1;
+                        $mode = $validation['pattern_mode'];
+                        $valid = match ($mode) {
+                            'matches' => preg_match('~^(?:'.$validation['pattern'].')$~u', $value) === 1,
+                            'contains' => $matches,
+                            'not_contains' => ! $matches,
+                            'not_matches' => preg_match('~^(?:'.$validation['pattern'].')$~u', $value) !== 1,
+                            default => true,
+                        };
+                        if (! $valid) {
+                            $fail('Format jawaban '.$field['label'].' tidak sesuai.');
+                        }
+                    }
+                }
+
+                if ($field['type'] === 'number' && is_numeric($value)) {
+                    $number = (float) $value;
+                    $operator = $validation['operator'] ?? null;
+                    $limit = isset($validation['value']) ? (float) $validation['value'] : null;
+                    $valid = match ($operator) {
+                        'between' => $number >= (float) $validation['min'] && $number <= (float) $validation['max'],
+                        'equal' => $limit !== null && $number === $limit,
+                        'greater_than' => $limit !== null && $number > $limit,
+                        'at_least' => $limit !== null && $number >= $limit,
+                        'less_than' => $limit !== null && $number < $limit,
+                        'at_most' => $limit !== null && $number <= $limit,
+                        default => true,
+                    };
+                    if (! $valid) {
+                        $fail('Nilai '.$field['label'].' tidak memenuhi batas yang ditentukan.');
+                    }
+                }
             }
         });
 
@@ -185,13 +282,21 @@ class PublicSubmissionService
 
         try {
             foreach ($answers as $name => $answer) {
-                if ($answer instanceof UploadedFile) {
-                    $path = Storage::disk('local')->putFile('form-submissions/'.$form->id.'/'.$reference, $answer);
+                $files = is_array($answer) ? $answer : [$answer];
+                $storedFiles = [];
+                foreach ($files as $file) {
+                    if (! $file instanceof UploadedFile) {
+                        continue;
+                    }
+                    $path = Storage::disk('local')->putFile('form-submissions/'.$form->id.'/'.$reference, $file);
                     if ($path === false) {
                         throw new \RuntimeException('Private upload storage failed.');
                     }
                     $storedPaths[] = $path;
-                    $answers[$name] = ['private_path' => $path];
+                    $storedFiles[] = ['private_path' => $path];
+                }
+                if ($storedFiles !== []) {
+                    $answers[$name] = is_array($answer) ? $storedFiles : $storedFiles[0];
                 }
             }
 

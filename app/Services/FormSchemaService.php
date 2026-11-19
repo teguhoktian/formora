@@ -5,6 +5,7 @@ namespace App\Services;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\Validator as LaravelValidator;
 
 class FormSchemaService
 {
@@ -184,9 +185,7 @@ class FormSchemaService
                         $validator->errors()->add("{$fieldPath}.settings", 'Pengaturan ini tidak berlaku untuk jenis field tersebut.');
                     }
 
-                    if (($field['validation'] ?? []) !== []) {
-                        $validator->errors()->add("{$fieldPath}.validation", 'Aturan validasi tambahan belum tersedia.');
-                    }
+                    $this->validateFieldValidation($validator, $field['validation'] ?? [], is_string($type) ? $type : '', "{$fieldPath}.validation");
                 }
 
                 $fieldsById = [];
@@ -229,6 +228,156 @@ class FormSchemaService
         });
 
         return $validator->validate();
+    }
+
+    private function validateFieldValidation(LaravelValidator $validator, mixed $validation, string $type, string $path): void
+    {
+        if (! is_array($validation)) {
+            return;
+        }
+
+        $common = ['custom_message'];
+        $specific = match ($type) {
+            'text', 'textarea' => ['min_length', 'max_length', 'contains', 'not_contains', 'pattern', 'pattern_mode'],
+            'number' => ['operator', 'value', 'min', 'max'],
+            'date' => ['min_date', 'max_date'],
+            'checkbox' => ['min_selections', 'max_selections', 'exact_selections'],
+            'file' => ['allowed_types', 'max_files', 'max_size_kb'],
+            default => [],
+        };
+        $unknown = array_diff(array_keys($validation), [...$common, ...$specific]);
+        if ($unknown !== []) {
+            $validator->errors()->add($path, 'Aturan validasi tidak sesuai dengan jenis field.');
+
+            return;
+        }
+
+        $message = $validation['custom_message'] ?? null;
+        if ($message !== null && (! is_string($message) || mb_strlen($message) > 240)) {
+            $validator->errors()->add($path.'.custom_message', 'Pesan kesalahan maksimal 240 karakter.');
+        }
+
+        $integerLimits = match ($type) {
+            'text' => ['min_length' => 5000, 'max_length' => 5000],
+            'textarea' => ['min_length' => 20000, 'max_length' => 20000],
+            'checkbox' => ['min_selections' => 100, 'max_selections' => 100, 'exact_selections' => 100],
+            'file' => ['max_files' => 5, 'max_size_kb' => 10240],
+            default => [],
+        };
+        foreach ($integerLimits as $key => $limit) {
+            $value = $validation[$key] ?? null;
+            if ($value !== null && (! is_numeric($value) || (float) $value !== (float) (int) $value || (int) $value < 0 || (int) $value > $limit)) {
+                $validator->errors()->add($path.'.'.$key, 'Nilai batas validasi tidak valid.');
+            }
+        }
+
+        if (isset($validation['min_length'], $validation['max_length']) && (int) $validation['min_length'] > (int) $validation['max_length']) {
+            $validator->errors()->add($path.'.max_length', 'Panjang maksimum harus sama dengan atau lebih besar dari minimum.');
+        }
+
+        if (in_array($type, ['text', 'textarea'], true)) {
+            foreach (['contains', 'not_contains'] as $key) {
+                if (isset($validation[$key]) && (! is_string($validation[$key]) || mb_strlen($validation[$key]) > 200)) {
+                    $validator->errors()->add($path.'.'.$key, 'Nilai teks maksimal 200 karakter.');
+                }
+            }
+            if (isset($validation['pattern'])) {
+                $pattern = $validation['pattern'];
+                $safePattern = is_string($pattern)
+                    && trim($pattern) !== ''
+                    && strlen($pattern) <= 128
+                    && preg_match('/^[A-Za-z0-9\\s\\[\\]{}()*+?.|^$\\\\-]+$/', $pattern) === 1
+                    && ! str_contains($pattern, '~')
+                    && ! str_contains($pattern, '(')
+                    && ! str_contains($pattern, ')')
+                    && preg_match_all('/(?:[*+?]|\{\d+(?:,\d*)?\})/', $pattern) <= 8
+                    && ! preg_match('/\.\*|\.\+/', $pattern)
+                    && ! preg_match('/(?:[*+?]|\{\d+(?:,\d*)?\})(?:[*+?]|\{)/', $pattern)
+                    && @preg_match('~'.$pattern.'~u', '') !== false;
+                if (! $safePattern) {
+                    $validator->errors()->add($path.'.pattern', 'Pola tidak valid atau terlalu kompleks.');
+                }
+            }
+            if (isset($validation['pattern_mode']) && ! in_array($validation['pattern_mode'], ['matches', 'contains', 'not_contains', 'not_matches'], true)) {
+                $validator->errors()->add($path.'.pattern_mode', 'Pilih jenis pencocokan pola yang tersedia.');
+            }
+            if (isset($validation['pattern']) xor isset($validation['pattern_mode'])) {
+                $validator->errors()->add($path.'.pattern', 'Pola dan jenis pencocokan harus diisi bersama.');
+            }
+        }
+
+        if ($type === 'number') {
+            $operator = $validation['operator'] ?? null;
+            if ($operator !== null && ! in_array($operator, ['between', 'equal', 'greater_than', 'at_least', 'less_than', 'at_most'], true)) {
+                $validator->errors()->add($path.'.operator', 'Pilih aturan angka yang tersedia.');
+            }
+            if ($operator !== null && $operator !== 'between' && ! is_numeric($validation['value'] ?? null)) {
+                $validator->errors()->add($path.'.value', 'Masukkan nilai angka untuk aturan ini.');
+            }
+            if ($operator === 'between' && (! is_numeric($validation['min'] ?? null) || ! is_numeric($validation['max'] ?? null) || (float) $validation['min'] > (float) $validation['max'])) {
+                $validator->errors()->add($path.'.min', 'Rentang angka harus memiliki batas minimum dan maksimum yang valid.');
+            }
+            if ($operator !== null && $operator !== 'between' && (isset($validation['min']) || isset($validation['max']))) {
+                $validator->errors()->add($path, 'Gunakan batas minimum dan maksimum hanya untuk aturan rentang.');
+            }
+            if ($operator === null && (isset($validation['value']) || isset($validation['min']) || isset($validation['max']))) {
+                $validator->errors()->add($path, 'Pilih aturan angka sebelum memasukkan nilainya.');
+            }
+            if ($operator === 'between' && isset($validation['value'])) {
+                $validator->errors()->add($path, 'Aturan rentang menggunakan batas minimum dan maksimum.');
+            }
+        }
+
+        if ($type === 'date') {
+            foreach (['min_date', 'max_date'] as $key) {
+                $date = $validation[$key] ?? null;
+                if ($date !== null) {
+                    $dateParts = is_string($date) && preg_match('/^(\d{4})-(\d{2})-(\d{2})$/', $date, $matches) === 1
+                        ? $matches
+                        : [];
+                    if (count($dateParts) !== 4) {
+                        $validator->errors()->add($path.'.'.$key, 'Tanggal batas tidak valid.');
+                    } elseif (! checkdate((int) $dateParts[2], (int) $dateParts[3], (int) $dateParts[1])) {
+                        $validator->errors()->add($path.'.'.$key, 'Tanggal batas tidak valid.');
+                    }
+                }
+            }
+            if (isset($validation['min_date'], $validation['max_date']) && $validation['min_date'] > $validation['max_date']) {
+                $validator->errors()->add($path.'.max_date', 'Tanggal akhir harus sama dengan atau setelah tanggal awal.');
+            }
+        }
+
+        if ($type === 'checkbox' && isset($validation['exact_selections']) && (isset($validation['min_selections']) || isset($validation['max_selections']))) {
+            $validator->errors()->add($path, 'Gunakan jumlah pilihan tepat atau batas minimum/maksimum, bukan keduanya.');
+        }
+        if ($type === 'checkbox'
+            && isset($validation['min_selections'], $validation['max_selections'])
+            && (int) $validation['min_selections'] > (int) $validation['max_selections']) {
+            $validator->errors()->add($path.'.max_selections', 'Jumlah maksimum harus sama dengan atau lebih besar dari minimum.');
+        }
+
+        if ($type === 'file') {
+            $allowedTypes = ['pdf', 'jpg', 'jpeg', 'png', 'doc', 'docx'];
+            $types = $validation['allowed_types'] ?? null;
+            $typesValid = is_array($types) && $types !== [] && array_is_list($types);
+            if ($typesValid) {
+                foreach ($types as $fileType) {
+                    if (! is_string($fileType) || ! in_array($fileType, $allowedTypes, true)) {
+                        $typesValid = false;
+                        break;
+                    }
+                }
+            }
+            if ($types !== null && ! $typesValid) {
+                $validator->errors()->add($path.'.allowed_types', 'Pilih setidaknya satu jenis file yang didukung.');
+            }
+            if (isset($validation['max_files']) && (int) $validation['max_files'] < 1) {
+                $validator->errors()->add($path.'.max_files', 'Jumlah file minimum adalah satu.');
+            }
+            if (isset($validation['max_size_kb']) && (int) $validation['max_size_kb'] < 1) {
+                $validator->errors()->add($path.'.max_size_kb', 'Ukuran file minimum adalah 1 KB.');
+            }
+        }
     }
 
     /** @param array<string, mixed> $schema */

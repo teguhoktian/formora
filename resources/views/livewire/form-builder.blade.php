@@ -281,6 +281,44 @@
                                 <textarea id="field-options" wire:model.live.debounce.700ms="optionLines" rows="5" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/20"></textarea>
                             </div>
                         @endif
+                        <section wire:key="field-validation-{{ $selectedField['id'] }}" class="space-y-3 border-t border-slate-100 pt-4" aria-labelledby="field-validation-title">
+                            <h3 id="field-validation-title" class="text-xs font-semibold text-slate-800">Validasi jawaban</h3>
+                            @if (in_array($selectedField['type'], ['text', 'textarea'], true))
+                                <div class="grid grid-cols-2 gap-2">
+                                    <label class="text-[11px] text-slate-600">Panjang minimum<input type="number" min="0" max="{{ $selectedField['type'] === 'textarea' ? 20000 : 5000 }}" wire:model="fieldValidation.min_length" class="mt-1 w-full rounded-lg border border-slate-300 px-2 py-1.5 text-xs"></label>
+                                    <label class="text-[11px] text-slate-600">Panjang maksimum<input type="number" min="0" max="{{ $selectedField['type'] === 'textarea' ? 20000 : 5000 }}" wire:model="fieldValidation.max_length" class="mt-1 w-full rounded-lg border border-slate-300 px-2 py-1.5 text-xs"></label>
+                                </div>
+                                <label class="block text-[11px] text-slate-600">Harus berisi<input type="text" maxlength="200" wire:model="fieldValidation.contains" class="mt-1 w-full rounded-lg border border-slate-300 px-2 py-1.5 text-xs"></label>
+                                <label class="block text-[11px] text-slate-600">Tidak boleh berisi<input type="text" maxlength="200" wire:model="fieldValidation.not_contains" class="mt-1 w-full rounded-lg border border-slate-300 px-2 py-1.5 text-xs"></label>
+                                <div class="space-y-2 rounded-lg bg-slate-50 p-2.5">
+                                    <label class="block text-[11px] text-slate-600">Pola teks (opsional)<input type="text" maxlength="128" wire:model="fieldValidation.pattern" placeholder="Contoh: [0-9]{10}" class="mt-1 w-full rounded-lg border border-slate-300 px-2 py-1.5 font-mono text-xs"></label>
+                                    <select wire:model="fieldValidation.pattern_mode" aria-label="Jenis pencocokan pola" class="w-full rounded-lg border border-slate-300 px-2 py-1.5 text-xs"><option value="matches">Harus cocok seluruhnya</option><option value="contains">Harus cocok sebagian</option><option value="not_matches">Tidak boleh cocok</option><option value="not_contains">Tidak boleh cocok sebagian</option></select>
+                                    <p class="text-[10px] leading-4 text-slate-500">Pola dibatasi ke sintaks sederhana demi keamanan.</p>
+                                </div>
+                            @elseif ($selectedField['type'] === 'number')
+                                <select wire:model="fieldValidation.operator" aria-label="Aturan angka" class="w-full rounded-lg border border-slate-300 px-2 py-2 text-xs"><option value="">Tanpa batas tambahan</option><option value="between">Di antara</option><option value="equal">Sama dengan</option><option value="greater_than">Lebih besar dari</option><option value="at_least">Lebih besar atau sama dengan</option><option value="less_than">Lebih kecil dari</option><option value="at_most">Lebih kecil atau sama dengan</option></select>
+                                @if (($fieldValidation['operator'] ?? '') === 'between')
+                                    <div class="grid grid-cols-2 gap-2"><label class="text-[11px] text-slate-600">Minimum<input type="number" step="any" wire:model="fieldValidation.min" class="mt-1 w-full rounded-lg border border-slate-300 px-2 py-1.5 text-xs"></label><label class="text-[11px] text-slate-600">Maksimum<input type="number" step="any" wire:model="fieldValidation.max" class="mt-1 w-full rounded-lg border border-slate-300 px-2 py-1.5 text-xs"></label></div>
+                                @elseif (($fieldValidation['operator'] ?? '') !== '')
+                                    <label class="block text-[11px] text-slate-600">Nilai pembanding<input type="number" step="any" wire:model="fieldValidation.value" class="mt-1 w-full rounded-lg border border-slate-300 px-2 py-1.5 text-xs"></label>
+                                @endif
+                            @elseif ($selectedField['type'] === 'date')
+                                <label class="block text-[11px] text-slate-600">Tanggal paling awal<input type="date" wire:model="fieldValidation.min_date" class="mt-1 w-full rounded-lg border border-slate-300 px-2 py-1.5 text-xs"></label>
+                                <label class="block text-[11px] text-slate-600">Tanggal paling akhir<input type="date" wire:model="fieldValidation.max_date" class="mt-1 w-full rounded-lg border border-slate-300 px-2 py-1.5 text-xs"></label>
+                            @elseif ($selectedField['type'] === 'checkbox')
+                                <div class="grid grid-cols-2 gap-2"><label class="text-[11px] text-slate-600">Jumlah minimum<input type="number" min="0" max="100" wire:model="fieldValidation.min_selections" class="mt-1 w-full rounded-lg border border-slate-300 px-2 py-1.5 text-xs"></label><label class="text-[11px] text-slate-600">Jumlah maksimum<input type="number" min="0" max="100" wire:model="fieldValidation.max_selections" class="mt-1 w-full rounded-lg border border-slate-300 px-2 py-1.5 text-xs"></label></div>
+                                <label class="block text-[11px] text-slate-600">Atau jumlah tepat<input type="number" min="0" max="100" wire:model="fieldValidation.exact_selections" class="mt-1 w-full rounded-lg border border-slate-300 px-2 py-1.5 text-xs"></label>
+                            @elseif ($selectedField['type'] === 'file')
+                                <fieldset><legend class="mb-1 text-[11px] text-slate-600">Jenis file yang diizinkan</legend><div class="grid grid-cols-3 gap-1">@foreach ($validationFileTypes as $extension => $label)<label class="flex items-center gap-1 text-[10px] text-slate-600"><input type="checkbox" value="{{ $extension }}" wire:model="fieldValidation.allowed_types" class="rounded border-slate-300">{{ $label }}</label>@endforeach</div><p class="mt-1 text-[10px] text-slate-500">Tanpa pilihan, semua format aman yang didukung diizinkan.</p></fieldset>
+                                <label class="block text-[11px] text-slate-600">Maksimum jumlah file<input type="number" min="1" max="5" wire:model="fieldValidation.max_files" class="mt-1 w-full rounded-lg border border-slate-300 px-2 py-1.5 text-xs"></label>
+                                <label class="block text-[11px] text-slate-600">Ukuran maksimum per file (KB)<input type="number" min="1" max="10240" wire:model="fieldValidation.max_size_kb" class="mt-1 w-full rounded-lg border border-slate-300 px-2 py-1.5 text-xs"></label>
+                            @else
+                                <p class="text-[11px] leading-4 text-slate-500">Tipe field ini memakai validasi bawaan. Format bawaan Smart Fields tidak dapat dilonggarkan.</p>
+                            @endif
+                            <label class="block text-[11px] text-slate-600">Pesan kesalahan khusus (opsional)<textarea maxlength="240" rows="2" wire:model="fieldValidation.custom_message" class="mt-1 w-full rounded-lg border border-slate-300 px-2 py-1.5 text-xs" placeholder="Contoh: Periksa kembali jawaban Anda."></textarea></label>
+                            @error('pages.*.fields.*.validation')<p class="text-xs text-red-700">{{ $message }}</p>@enderror
+                            <button type="button" wire:click="saveFieldValidation" wire:loading.attr="disabled" class="w-full rounded-lg bg-slate-900 px-3 py-2 text-xs font-semibold text-white hover:bg-slate-700 disabled:opacity-50">Simpan validasi</button>
+                        </section>
                         <div class="border-t border-slate-100 pt-3">
                             <button type="button" wire:click="duplicateField('{{ $selectedField['id'] }}')" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50">Duplikasi field</button>
                             <button type="button" wire:click="deleteField('{{ $selectedField['id'] }}')" wire:confirm="Hapus field ini?" class="mt-2 w-full rounded-lg px-3 py-2 text-left text-xs font-semibold text-red-700 hover:bg-red-50">Hapus field</button>

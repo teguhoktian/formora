@@ -353,6 +353,24 @@ Status: implementasi dan validasi selesai.
 - `vendor/bin/pint --test app/Livewire/FormBuilder.php tests/Feature/FormBuilderTest.php` — lulus.
 - `git diff --check` — lulus.
 
+## Penyempurnaan pasca-MVP — validasi jawaban per field
+
+Status: implementasi selesai.
+
+- Builder menyimpan aturan validasi pada schema setiap field. Teks/paragraf mendukung panjang minimum/maksimum, frasa wajib/terlarang, dan pola aman sederhana; angka mendukung perbandingan atau rentang; tanggal mendukung rentang; checkbox mendukung jumlah pilihan; unggahan mendukung jenis, jumlah, dan ukuran file. Tipe lain tetap memakai validasi bawaan dan menerima pesan kesalahan khusus.
+- Validasi backend menjadi sumber kebenaran. Pesan kesalahan dapat dikustomisasi. Pola teks dibatasi panjang/sintaks dan menolak pengelompokan serta wildcard kuantitas berisiko.
+- File tetap privat; unggahan dapat berisi maksimal 5 file dengan ukuran maksimal 10 MB per file dan total 25 MB per submission. Respons dan ekspor hanya menyebut jumlah lampiran, tidak memaparkan path privat.
+- Tidak ada migration atau perubahan database.
+
+### Validasi batch
+
+- `composer run types:check --no-interaction` — lulus, PHPStan 0 error.
+- `vendor/bin/pint --parallel --test` — lulus di dalam `composer test`.
+- `npm run build` — lulus; peringatan opsional `fontaine` untuk fallback font.
+- `php artisan test --compact tests/Unit/FormSchemaServiceTest.php tests/Feature/FormBuilderTest.php tests/Feature/PublicFormTest.php` — lulus, 30 test / 126 assertion.
+- `composer test --no-interaction` — 116 dari 120 test lulus. Empat kegagalan berada di `DashboardTest` dan `Settings/SecurityTest`, area yang tidak disentuh batch ini dan sebelumnya tercatat gagal pada progress. Tes yang terkait batch ini lulus.
+- `git diff --check` — lulus.
+
 ## Penyempurnaan fitur pasca-MVP — Logika tampil/sembunyi field
 
 Status: implementasi selesai untuk kondisi satu aturan per field pada halaman yang sama.

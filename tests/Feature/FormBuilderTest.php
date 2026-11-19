@@ -169,6 +169,26 @@ class FormBuilderTest extends TestCase
             ->assertSet('visibilityValue', 'pilihan_2');
     }
 
+    public function test_builder_saves_type_specific_field_validation(): void
+    {
+        [$owner, $form] = $this->makeFormFor('owner');
+        $schemas = app(FormSchemaService::class);
+        $schema = $form->versions()->firstOrFail()->schema;
+        $field = $schemas->newField('text', $schema);
+        $schema['pages'][0]['fields'][] = $field;
+        $form->versions()->firstOrFail()->update(['schema' => $schema]);
+
+        Livewire::actingAs($owner)
+            ->test(FormBuilder::class, ['formId' => $form->id])
+            ->call('selectField', $field['id'])
+            ->set('fieldValidation', ['min_length' => 3, 'custom_message' => 'Jawaban terlalu singkat.'])
+            ->call('saveFieldValidation')
+            ->assertSet('saveState', 'saved');
+
+        $savedField = $form->versions()->firstOrFail()->fresh()->schema['pages'][0]['fields'][0];
+        $this->assertSame(['min_length' => 3, 'custom_message' => 'Jawaban terlalu singkat.'], $savedField['validation']);
+    }
+
     public function test_viewer_cannot_open_or_mutate_the_builder(): void
     {
         [$viewer, $form] = $this->makeFormFor('viewer');

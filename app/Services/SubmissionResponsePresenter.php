@@ -22,7 +22,7 @@ class SubmissionResponsePresenter
             $value = $answers[$name];
             $result[$field['label']] = $this->isSensitive($name, $field['label'], $field['type'])
                 ? '••••••••'
-                : (is_array($value) && isset($value['private_path']) ? 'File terlampir' : $this->smartFields->displayValue($field['type'], $value));
+                : $this->presentValue($field['type'], $value);
         }
 
         return $result;
@@ -53,6 +53,9 @@ class SubmissionResponsePresenter
         if (is_array($value) && isset($value['private_path'])) {
             return 'File terlampir';
         }
+        if ($this->isFileList($value)) {
+            return 'File terlampir ('.count($value).' file)';
+        }
 
         return $type !== null
             ? $this->smartFields->displayValue($type, $value)
@@ -63,5 +66,23 @@ class SubmissionResponsePresenter
     {
         return ($type !== null && ($this->smartFields->definition($type)['sensitive'] ?? false))
             || (bool) preg_match('/nik|npwp|rekening|account|password|token|secret|kata\s+sandi/i', $name.' '.$label);
+    }
+
+    private function presentValue(string $type, mixed $value): mixed
+    {
+        if (is_array($value) && isset($value['private_path'])) {
+            return 'File terlampir';
+        }
+        if ($this->isFileList($value)) {
+            return 'File terlampir ('.count($value).' file)';
+        }
+
+        return $this->smartFields->displayValue($type, $value);
+    }
+
+    private function isFileList(mixed $value): bool
+    {
+        return is_array($value) && array_is_list($value) && $value !== []
+            && collect($value)->every(fn (mixed $item): bool => is_array($item) && isset($item['private_path']));
     }
 }

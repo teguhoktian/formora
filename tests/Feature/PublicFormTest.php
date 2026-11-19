@@ -221,6 +221,70 @@ class PublicFormTest extends TestCase
         $this->assertSame(1, $form->submissions()->count());
     }
 
+    public function test_configured_text_and_number_rules_are_checked_on_the_server(): void
+    {
+        [$textForm] = $this->makePublishedForm([
+            ['type' => 'text', 'name' => 'code', 'label' => 'Kode', 'required' => true, 'validation' => [
+                'min_length' => 4, 'max_length' => 8, 'contains' => 'FORM', 'pattern' => '[A-Z]{4}[0-9]{2}', 'pattern_mode' => 'matches', 'custom_message' => 'Kode belum sesuai.',
+            ]],
+        ]);
+        $this->from(route('public.forms.show', $textForm->slug))
+            ->post(route('public.forms.submit', $textForm->slug), ['answers' => ['code' => 'abc']])
+            ->assertSessionHasErrors('answers.code');
+        $this->assertSame('Kode belum sesuai.', session('errors')->getBag('default')->first('answers.code'));
+        $this->assertSame(0, $textForm->submissions()->count());
+        $this->post(route('public.forms.submit', $textForm->slug), ['answers' => ['code' => 'FORM42']])->assertRedirect();
+        $this->assertSame(1, $textForm->submissions()->count());
+
+        [$numberForm] = $this->makePublishedForm([
+            ['type' => 'number', 'name' => 'amount', 'label' => 'Jumlah', 'required' => true, 'validation' => [
+                'operator' => 'between', 'min' => 2, 'max' => 4,
+            ]],
+        ]);
+        $this->from(route('public.forms.show', $numberForm->slug))
+            ->post(route('public.forms.submit', $numberForm->slug), ['answers' => ['amount' => '5']])
+            ->assertSessionHasErrors('answers.amount');
+        $this->post(route('public.forms.submit', $numberForm->slug), ['answers' => ['amount' => '3']])->assertRedirect();
+        $this->assertSame(1, $numberForm->submissions()->count());
+    }
+
+    public function test_checkbox_count_validation_is_enforced(): void
+    {
+        [$form] = $this->makePublishedForm([
+            ['type' => 'checkbox', 'name' => 'topics', 'label' => 'Topik', 'required' => false, 'validation' => [
+                'exact_selections' => 2,
+            ]],
+        ]);
+        $this->from(route('public.forms.show', $form->slug))
+            ->post(route('public.forms.submit', $form->slug), ['answers' => ['topics' => ['pilihan_1']]])
+            ->assertSessionHasErrors('answers.topics');
+        $this->post(route('public.forms.submit', $form->slug), ['answers' => ['topics' => ['pilihan_1', 'pilihan_2']]])->assertRedirect();
+        $this->assertSame(1, $form->submissions()->count());
+    }
+
+    public function test_configured_multiple_private_files_obey_type_count_and_size_limits(): void
+    {
+        Storage::fake('local');
+        [$form] = $this->makePublishedForm([
+            ['type' => 'file', 'name' => 'documents', 'label' => 'Dokumen', 'required' => true, 'validation' => [
+                'allowed_types' => ['pdf'], 'max_files' => 2, 'max_size_kb' => 64,
+            ]],
+        ]);
+        $this->post(route('public.forms.submit', $form->slug), [
+            'answers' => ['documents' => [UploadedFile::fake()->create('one.pdf', 32), UploadedFile::fake()->create('two.pdf', 32)]],
+        ])->assertRedirect();
+        $stored = $form->submissions()->firstOrFail()->response_data['documents'];
+        $this->assertCount(2, $stored);
+        foreach ($stored as $file) {
+            Storage::disk('local')->assertExists($file['private_path']);
+        }
+        $this->from(route('public.forms.show', $form->slug))
+            ->post(route('public.forms.submit', $form->slug), [
+                'answers' => ['documents' => [UploadedFile::fake()->create('one.pdf', 32), UploadedFile::fake()->create('two.pdf', 32), UploadedFile::fake()->create('three.pdf', 32)]],
+            ])->assertSessionHasErrors('answers.documents');
+        $this->assertSame(1, $form->submissions()->count());
+    }
+
     public function test_public_submit_route_is_rate_limited(): void
     {
         [$form] = $this->makePublishedForm([
@@ -235,7 +299,7 @@ class PublicFormTest extends TestCase
         $this->post($url, ['website' => 'bot'])->assertTooManyRequests();
     }
 
-    /** @param list<array{type: string, name: string, label: string, required: bool, page?: int}> $fieldDefinitions
+    /** @param list<array{type: string, name: string, label: string, required: bool, page?: int, validation?: array<string, mixed>}> $fieldDefinitions
      * @return array{Form, FormVersion}
      */
     private function makePublishedForm(array $fieldDefinitions): array
@@ -253,6 +317,7 @@ class PublicFormTest extends TestCase
             $field['name'] = $definition['name'];
             $field['label'] = $definition['label'];
             $field['required'] = $definition['required'];
+            $field['validation'] = $definition['validation'] ?? [];
             $schema['pages'][$pageIndex]['fields'][] = $field;
         }
         $draft = $form->versions()->create([

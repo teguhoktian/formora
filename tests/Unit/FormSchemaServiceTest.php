@@ -80,6 +80,20 @@ class FormSchemaServiceTest extends TestCase
         $schemas->validate($schema);
     }
 
+    public function test_field_validation_schema_accepts_type_specific_rules_and_rejects_unsafe_patterns(): void
+    {
+        $schemas = app(FormSchemaService::class);
+        $schema = $schemas->empty();
+        $text = $schemas->newField('text', $schema);
+        $text['validation'] = ['min_length' => 3, 'pattern' => '[A-Z]{3}', 'pattern_mode' => 'matches'];
+        $schema['pages'][0]['fields'][] = $text;
+        $this->assertEquals($schema, $schemas->validate($schema));
+
+        $schema['pages'][0]['fields'][0]['validation']['pattern'] = '.*a.*a.*';
+        $this->expectException(ValidationException::class);
+        $schemas->validate($schema);
+    }
+
     public function test_malformed_pages_are_rejected_as_validation_errors(): void
     {
         $this->expectException(ValidationException::class);

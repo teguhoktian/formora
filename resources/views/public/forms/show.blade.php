@@ -66,12 +66,13 @@
                             <div class="space-y-7">
                                 @foreach ($page['fields'] as $field)
                                     @php($fieldName = 'answers['.$field['name'].']')
+                                    @php($fieldValidation = $field['validation'] ?? [])
                                     <div class="space-y-2" data-field-id="{{ $field['id'] }}" data-field-name="{{ $field['name'] }}" @if (is_array($field['visibility'] ?? null)) data-visibility-source="{{ $field['visibility']['field_id'] }}" data-visibility-value="{{ $field['visibility']['value'] }}" @endif>
                                         <label @if (!in_array($field['type'], ['radio', 'checkbox', 'smart_address'], true)) for="field-{{ $field['id'] }}" @endif class="block text-sm font-semibold text-slate-800">
                                             {{ $field['label'] }}@if ($field['required']) <span class="text-red-600" aria-label="wajib diisi">*</span>@endif
                                         </label>
                                         @if ($field['type'] === 'textarea')
-                                            <textarea id="field-{{ $field['id'] }}" name="{{ $fieldName }}" rows="4" maxlength="20000" class="w-full rounded-xl border border-slate-300 px-3.5 py-3 text-sm focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/20"></textarea>
+                                            <textarea id="field-{{ $field['id'] }}" name="{{ $fieldName }}" rows="4" maxlength="{{ $fieldValidation['max_length'] ?? 20000 }}" @if (isset($fieldValidation['min_length'])) minlength="{{ $fieldValidation['min_length'] }}" @endif class="w-full rounded-xl border border-slate-300 px-3.5 py-3 text-sm focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/20"></textarea>
                                         @elseif ($field['type'] === 'select')
                                             <select id="field-{{ $field['id'] }}" name="{{ $fieldName }}" class="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-3 text-sm focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/20">
                                                 <option value="">Pilih jawaban</option>
@@ -87,8 +88,10 @@
                                                 @endforeach
                                             </div>
                                         @elseif ($field['type'] === 'file')
-                                            <input id="field-{{ $field['id'] }}" type="file" name="{{ $fieldName }}" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" class="block w-full rounded-xl border border-slate-300 text-sm text-slate-600 file:mr-4 file:border-0 file:bg-slate-100 file:px-4 file:py-3 file:text-sm file:font-semibold file:text-slate-700">
-                                            <p class="text-xs text-slate-500">PDF, JPG, PNG, DOC, atau DOCX · maksimal 10 MB</p>
+                                            @php($allowedFileTypes = $fieldValidation['allowed_types'] ?? ['pdf', 'jpg', 'jpeg', 'png', 'doc', 'docx'])
+                                            @php($maxFiles = $fieldValidation['max_files'] ?? 1)
+                                            <input id="field-{{ $field['id'] }}" type="file" name="{{ $fieldName }}{{ $maxFiles > 1 ? '[]' : '' }}" @if ($maxFiles > 1) multiple @endif accept="{{ implode(',', array_map(fn ($extension) => '.'.$extension, $allowedFileTypes)) }}" class="block w-full rounded-xl border border-slate-300 text-sm text-slate-600 file:mr-4 file:border-0 file:bg-slate-100 file:px-4 file:py-3 file:text-sm file:font-semibold file:text-slate-700">
+                                            <p class="text-xs text-slate-500">{{ strtoupper(implode(', ', $allowedFileTypes)) }} · maksimal {{ $maxFiles }} file · {{ number_format(($fieldValidation['max_size_kb'] ?? 10240) / 1024, 1) }} MB per file</p>
                                         @elseif ($field['type'] === 'smart_address')
                                             <div class="grid gap-3 sm:grid-cols-2" data-smart-address data-regions-url="{{ url('/smart-fields/regions') }}">
                                                 <div>
@@ -135,7 +138,7 @@
                                             @endif
                                             @if ($smartDefinition['help_text'])<p class="text-xs leading-5 text-slate-500">{{ $smartDefinition['help_text'] }}</p>@endif
                                         @else
-                                            <input id="field-{{ $field['id'] }}" type="{{ match ($field['type']) { 'email' => 'email', 'phone' => 'tel', 'number' => 'number', 'date' => 'date', default => 'text' } }}" name="{{ $fieldName }}" maxlength="{{ $field['type'] === 'email' ? 254 : 5000 }}" class="w-full rounded-xl border border-slate-300 px-3.5 py-3 text-sm focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/20">
+                                                <input id="field-{{ $field['id'] }}" type="{{ match ($field['type']) { 'email' => 'email', 'phone' => 'tel', 'number' => 'number', 'date' => 'date', default => 'text' } }}" name="{{ $fieldName }}" maxlength="{{ $fieldValidation['max_length'] ?? ($field['type'] === 'email' ? 254 : 5000) }}" @if (isset($fieldValidation['min_length'])) minlength="{{ $fieldValidation['min_length'] }}" @endif @if ($field['type'] === 'number' && ($fieldValidation['operator'] ?? '') === 'between') min="{{ $fieldValidation['min'] }}" max="{{ $fieldValidation['max'] }}" @elseif ($field['type'] === 'number' && in_array($fieldValidation['operator'] ?? '', ['greater_than', 'at_least'], true)) min="{{ $fieldValidation['value'] }}" @elseif ($field['type'] === 'number' && in_array($fieldValidation['operator'] ?? '', ['less_than', 'at_most'], true)) max="{{ $fieldValidation['value'] }}" @elseif ($field['type'] === 'date') @if (isset($fieldValidation['min_date'])) min="{{ $fieldValidation['min_date'] }}" @endif @if (isset($fieldValidation['max_date'])) max="{{ $fieldValidation['max_date'] }}" @endif @endif class="w-full rounded-xl border border-slate-300 px-3.5 py-3 text-sm focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/20">
                                         @endif
                                         @if ($field['help_text'])<p class="text-xs leading-5 text-slate-500">{{ $field['help_text'] }}</p>@endif
                                         @error('answers.'.$field['name'])<p class="text-xs font-medium text-red-700">{{ $message }}</p>@enderror
