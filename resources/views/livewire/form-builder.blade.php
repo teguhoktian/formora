@@ -1,4 +1,4 @@
-<div class="min-h-screen bg-[#f7f8fa]" wire:key="form-builder-{{ $form->id }}">
+<div class="min-h-screen bg-[#f7f8fa]" wire:key="form-builder-{{ $form->id }}" x-data="{ confirmOpen: false, confirmMessage: '', confirmAction: null }" @formora-confirm.window="confirmMessage = $event.detail.message; confirmAction = $event.detail.action; confirmOpen = true" @keydown.escape.window="confirmOpen = false">
     <header class="sticky top-0 z-30 border-b border-slate-200/80 bg-white/95 shadow-[0_2px_10px_-8px_rgba(15,23,42,0.22)] backdrop-blur">
         <div class="mx-auto flex max-w-[1600px] flex-wrap items-center gap-3 px-4 py-3 sm:px-6">
             <a href="{{ route('forms.index') }}" class="rounded-lg p-2 text-slate-500 hover:bg-slate-100" aria-label="Kembali ke daftar form">←</a>
@@ -16,15 +16,15 @@
             </div>
             @if ($canPublish)
                 @if ($form->status === 'published')
-                    <button type="button" wire:click="publishDraft('{{ $draftId }}')" wire:loading.attr="disabled" wire:confirm="Publikasikan draf sebagai versi publik terbaru?" class="rounded-xl bg-emerald-700 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-800 disabled:opacity-50">Publikasikan draf</button>
+                    <button type="button" @click="$dispatch('formora-confirm', { message: 'Publikasikan draf sebagai versi publik terbaru?', action: () => $wire.publishDraft('{{ $draftId }}') })" wire:loading.attr="disabled" class="rounded-xl bg-emerald-700 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-800 disabled:opacity-50">Publikasikan draf</button>
                     <button type="button" wire:click="pause" class="rounded-xl border border-amber-300 px-3 py-2 text-xs font-semibold text-amber-800 hover:bg-amber-50">Jeda publik</button>
-                    <button type="button" wire:click="unpublish" wire:confirm="Hentikan publikasi form ini? Versi publik sebelumnya tetap disimpan." class="rounded-xl border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50">Hentikan publikasi</button>
+                    <button type="button" @click="$dispatch('formora-confirm', { message: 'Hentikan publikasi form ini? Versi publik sebelumnya tetap disimpan.', action: () => $wire.unpublish() })" class="rounded-xl border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50">Hentikan publikasi</button>
                 @elseif ($form->status === 'paused')
-                    <button type="button" wire:click="publishDraft('{{ $draftId }}')" wire:loading.attr="disabled" wire:confirm="Publikasikan draf sebagai versi publik terbaru?" class="rounded-xl bg-emerald-700 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-800 disabled:opacity-50">Publikasikan draf</button>
+                    <button type="button" @click="$dispatch('formora-confirm', { message: 'Publikasikan draf sebagai versi publik terbaru?', action: () => $wire.publishDraft('{{ $draftId }}') })" wire:loading.attr="disabled" class="rounded-xl bg-emerald-700 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-800 disabled:opacity-50">Publikasikan draf</button>
                     <button type="button" wire:click="resume" class="rounded-xl border border-emerald-300 px-3 py-2 text-xs font-semibold text-emerald-800 hover:bg-emerald-50">Lanjutkan publikasi</button>
-                    <button type="button" wire:click="unpublish" wire:confirm="Hentikan publikasi form ini? Versi publik sebelumnya tetap disimpan." class="rounded-xl border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50">Hentikan publikasi</button>
+                    <button type="button" @click="$dispatch('formora-confirm', { message: 'Hentikan publikasi form ini? Versi publik sebelumnya tetap disimpan.', action: () => $wire.unpublish() })" class="rounded-xl border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50">Hentikan publikasi</button>
                 @else
-                    <button type="button" wire:click="publishDraft('{{ $draftId }}')" wire:loading.attr="disabled" wire:confirm="Publikasikan versi draf ini?" class="rounded-xl bg-emerald-700 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-800 disabled:opacity-50">Publikasikan</button>
+                    <button type="button" @click="$dispatch('formora-confirm', { message: 'Publikasikan versi draf ini?', action: () => $wire.publishDraft('{{ $draftId }}') })" wire:loading.attr="disabled" class="rounded-xl bg-emerald-700 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-800 disabled:opacity-50">Publikasikan</button>
                 @endif
             @endif
             @if ($form->status === 'published' && $publicUrl)
@@ -53,7 +53,7 @@
         <div class="mx-auto mt-4 max-w-5xl px-4 sm:px-6" role="alert"><p class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">{{ $message }}</p></div>
     @enderror
     @if ($errors->any() && !$errors->has('save'))
-        <div class="mx-auto mt-4 max-w-5xl px-4 sm:px-6" role="alert"><p class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">Periksa kembali isian. Perubahan belum tersimpan.</p></div>
+        <div class="mx-auto mt-4 max-w-5xl px-4 sm:px-6" role="alert"><div class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800"><p class="font-semibold">Periksa kembali isian. Perubahan belum tersimpan.</p>@foreach ($errors->all() as $error)<p class="mt-1">{{ $error }}</p>@endforeach</div></div>
     @endif
 
     @if ($activeTab === 'logic')
@@ -137,6 +137,12 @@
                                         <textarea disabled rows="3" class="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5"></textarea>
                                     @elseif ($field['type'] === 'select')
                                         <select disabled class="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5"><option>Pilih jawaban</option>@foreach ($field['settings']['options'] ?? [] as $option)<option>{{ $option['label'] }}</option>@endforeach</select>
+                                    @elseif ($field['type'] === 'rating')
+                                        <div class="text-2xl tracking-wide text-amber-400" aria-label="Rating bintang">{{ str_repeat('★ ', $field['settings']['scale']) }}</div>
+                                    @elseif ($field['type'] === 'slider')
+                                        <div class="space-y-2"><input disabled type="range" min="{{ $field['settings']['min'] }}" max="{{ $field['settings']['max'] }}" step="{{ $field['settings']['step'] }}" class="w-full"><div class="flex justify-between text-xs text-slate-400"><span>{{ $field['settings']['min'] }}</span><span>{{ $field['settings']['max'] }}</span></div></div>
+                                    @elseif ($field['type'] === 'date' && ($field['settings']['mode'] ?? 'date') === 'date_range')
+                                        <div class="grid grid-cols-2 gap-2"><div class="h-10 rounded-lg border border-slate-300 bg-slate-50"></div><div class="h-10 rounded-lg border border-slate-300 bg-slate-50"></div></div>
                                     @elseif (in_array($field['type'], ['radio', 'checkbox'], true))
                                         <div class="space-y-2">
                                             @foreach ($field['settings']['options'] ?? [] as $option)
@@ -144,7 +150,7 @@
                                             @endforeach
                                         </div>
                                     @else
-                                        <input disabled type="{{ match ($field['type']) { 'email' => 'email', 'phone' => 'tel', 'number' => 'number', 'date' => 'date', 'file' => 'file', default => 'text' } }}" class="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5">
+                                        <input disabled type="{{ match ($field['type']) { 'email' => 'email', 'phone' => 'tel', 'number' => 'number', 'date' => match ($field['settings']['mode'] ?? 'date') { 'time' => 'time', 'datetime' => 'datetime-local', default => 'date' }, 'file' => 'file', default => 'text' } }}" class="w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5">
                                     @endif
                                     @if ($field['help_text'])<p class="mt-1.5 text-xs text-slate-500">{{ $field['help_text'] }}</p>@endif
                                 </div>
@@ -163,8 +169,13 @@
         <main class="mx-auto max-w-3xl px-4 py-8 sm:px-6 lg:py-12">
             <section class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
                 <p class="text-sm font-medium text-emerald-700">Pengaturan form</p>
-                <h1 class="mt-2 text-xl font-semibold text-slate-950">Pesan responden</h1>
+                <h1 class="mt-2 text-xl font-semibold text-slate-950">Detail form dan pesan responden</h1>
                 <div class="mt-6 space-y-5">
+                    <div>
+                        <label for="form-description" class="mb-1.5 block text-sm font-medium text-slate-700">Deskripsi form</label>
+                        <textarea id="form-description" wire:model.live.debounce.700ms="formDescription" maxlength="2000" rows="4" placeholder="Jelaskan tujuan form dan informasi penting untuk responden." class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/20"></textarea>
+                        @error('formDescription')<p class="mt-1 text-xs text-red-700">{{ $message }}</p>@enderror
+                    </div>
                     <div>
                         <label for="submit-label" class="mb-1.5 block text-sm font-medium text-slate-700">Teks tombol kirim</label>
                         <input id="submit-label" wire:model.live.debounce.700ms="submitLabel" maxlength="80" class="w-full rounded-xl border border-slate-300 px-3.5 py-2.5 text-sm focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/20">
@@ -178,19 +189,31 @@
         </main>
     @else
         <main class="mx-auto grid max-w-[1600px] gap-4 px-4 py-5 sm:px-6 xl:grid-cols-[230px_minmax(420px,1fr)_290px]">
-            <aside class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+            <aside x-data="{ fieldCatalogOpen: false, fieldSearch: '' }" class="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
                 <details class="group xl:open" open>
                     <summary class="cursor-pointer list-none text-sm font-semibold text-slate-900">Tambah field <span class="float-right text-slate-400 xl:hidden">⌄</span></summary>
                     <p class="mb-3 mt-1 text-xs text-slate-500">Pilih jenis field untuk ditambahkan.</p>
                     <div class="grid grid-cols-2 gap-2 xl:grid-cols-1">
-                        @foreach ($fieldTypes as $type)
+                        @foreach (array_slice($fieldTypes, 0, 8) as $type)
                             <button type="button" wire:click="addField('{{ $type }}')" class="flex min-w-0 items-center gap-2 rounded-xl border border-slate-200 px-3 py-2.5 text-left text-xs font-medium text-slate-700 hover:border-emerald-300 hover:bg-emerald-50 focus:outline-none focus:ring-2 focus:ring-emerald-600">
                                 <span class="grid size-6 shrink-0 place-items-center rounded-lg bg-slate-100 text-[10px] font-bold uppercase text-slate-500" aria-hidden="true">{{ substr($type, 0, 2) }}</span>
-                                <span class="truncate">{{ $smartFieldDefinitions[$type]['toolbox_label'] ?? match ($type) { 'text' => 'Teks singkat', 'textarea' => 'Paragraf', 'email' => 'Email', 'phone' => 'Telepon', 'number' => 'Angka', 'date' => 'Tanggal', 'select' => 'Dropdown', 'radio' => 'Pilihan tunggal', 'checkbox' => 'Kotak centang', 'file' => 'Unggah file' } }}</span>
+                                <span class="truncate">{{ $smartFieldDefinitions[$type]['toolbox_label'] ?? match ($type) { 'text' => 'Teks singkat', 'textarea' => 'Paragraf', 'email' => 'Email', 'phone' => 'Telepon', 'number' => 'Angka', 'date' => 'Tanggal', 'rating' => 'Rating bintang', 'slider' => 'Slider angka', 'select' => 'Dropdown', 'radio' => 'Pilihan tunggal', 'checkbox' => 'Kotak centang', 'file' => 'Unggah file' } }}</span>
                             </button>
                         @endforeach
                     </div>
+                    <button type="button" @click="fieldCatalogOpen = true; fieldSearch = ''" class="mt-3 w-full rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-2.5 text-xs font-semibold text-emerald-800 hover:bg-emerald-100">Cari semua field</button>
                 </details>
+                <div x-cloak x-show="fieldCatalogOpen" x-transition.opacity class="fixed inset-0 z-50 grid place-items-center bg-slate-950/50 p-4" role="presentation" @click.self="fieldCatalogOpen = false" @keydown.escape.window="fieldCatalogOpen = false">
+                    <section x-show="fieldCatalogOpen" x-transition class="w-full max-w-2xl overflow-hidden rounded-2xl bg-white shadow-2xl" role="dialog" aria-modal="true" aria-labelledby="field-catalog-title">
+                        <header class="border-b border-slate-100 p-5"><div class="flex items-center justify-between"><div><h2 id="field-catalog-title" class="text-lg font-semibold text-slate-950">Pilih field</h2><p class="mt-1 text-xs text-slate-500">Cari berdasarkan nama atau jenis data.</p></div><button type="button" @click="fieldCatalogOpen = false" class="rounded-lg p-2 text-slate-500 hover:bg-slate-100" aria-label="Tutup">×</button></div><input x-model="fieldSearch" x-ref="fieldSearchInput" type="search" placeholder="Cari field…" class="mt-4 w-full rounded-xl border border-slate-300 px-3.5 py-3 text-sm focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/20"></header>
+                        <div x-effect="if (fieldCatalogOpen) $nextTick(() => $refs.fieldSearchInput.focus())" class="grid max-h-[60vh] grid-cols-1 gap-2 overflow-y-auto p-4 sm:grid-cols-2">
+                            @foreach ($fieldTypes as $type)
+                                <button type="button" wire:key="field-catalog-{{ $type }}" x-show="!fieldSearch || @js(mb_strtolower(($smartFieldDefinitions[$type]['toolbox_label'] ?? $type).' '.$type)).includes(fieldSearch.toLowerCase())" @click="$wire.addField('{{ $type }}'); fieldCatalogOpen = false" class="flex items-center gap-3 rounded-xl border border-slate-200 p-3 text-left hover:border-emerald-300 hover:bg-emerald-50"><span class="grid size-9 place-items-center rounded-lg bg-slate-100 text-xs font-bold uppercase text-slate-600">{{ substr($type, 0, 2) }}</span><span><span class="block text-sm font-semibold text-slate-800">{{ $smartFieldDefinitions[$type]['toolbox_label'] ?? match ($type) { 'text' => 'Teks singkat', 'textarea' => 'Paragraf', 'email' => 'Email', 'phone' => 'Telepon', 'number' => 'Angka', 'date' => 'Tanggal', 'select' => 'Dropdown', 'radio' => 'Pilihan tunggal', 'checkbox' => 'Kotak centang', 'file' => 'Unggah file', default => ucfirst($type) } }}</span><span class="text-[11px] text-slate-500">{{ $type }}</span></span></button>
+                            @endforeach
+                        </div>
+                        <footer class="border-t border-slate-100 p-4 text-right"><button type="button" @click="fieldCatalogOpen = false" class="rounded-xl border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700">Tutup</button></footer>
+                    </section>
+                </div>
             </aside>
 
             <section class="min-w-0 rounded-2xl border border-slate-200 bg-slate-100/80 p-4 sm:p-6" aria-label="Canvas form">
@@ -207,7 +230,7 @@
                         </div>
                         <div class="flex items-center gap-2">
                             @if (count($schema['pages']) > 1)
-                                <button type="button" wire:click="deletePage('{{ $selectedPageId }}')" wire:confirm="Hapus halaman beserta semua field di dalamnya?" class="rounded-lg px-2 py-1.5 text-xs font-medium text-red-700 hover:bg-red-50">Hapus halaman</button>
+                                <button type="button" @click="$dispatch('formora-confirm', { message: 'Hapus halaman beserta semua field di dalamnya?', action: () => $wire.deletePage('{{ $selectedPageId }}') })" class="rounded-lg px-2 py-1.5 text-xs font-medium text-red-700 hover:bg-red-50">Hapus halaman</button>
                             @endif
                             <button type="button" wire:click="addPage" class="rounded-lg border border-slate-300 bg-white px-2.5 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50">＋ Halaman</button>
                         </div>
@@ -236,7 +259,7 @@
                                     </button>
                                     <div class="flex shrink-0 items-center gap-1">
                                         <button type="button" wire:click="duplicateField('{{ $field['id'] }}')" class="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700" aria-label="Duplikasi field">⧉</button>
-                                        <button type="button" wire:click="deleteField('{{ $field['id'] }}')" wire:confirm="Hapus field ini?" class="rounded-lg p-2 text-slate-400 hover:bg-red-50 hover:text-red-700" aria-label="Hapus field">×</button>
+                                        <button type="button" @click="$dispatch('formora-confirm', { message: 'Hapus field ini?', action: () => $wire.deleteField('{{ $field['id'] }}') })" class="rounded-lg p-2 text-slate-400 hover:bg-red-50 hover:text-red-700" aria-label="Hapus field">×</button>
                                     </div>
                                 </div>
                             </li>
@@ -275,6 +298,13 @@
                             <label for="field-help" class="mb-1.5 block text-xs font-medium text-slate-600">Teks bantuan</label>
                             <textarea id="field-help" wire:model.live.debounce.600ms="fieldHelpText" maxlength="500" rows="3" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/20" placeholder="Petunjuk untuk responden"></textarea>
                         </div>
+                        @if ($selectedField['type'] === 'date')
+                            <div class="border-t border-slate-100 pt-3"><label for="date-mode" class="mb-1.5 block text-xs font-medium text-slate-600">Jenis tanggal</label><select id="date-mode" wire:model="fieldSettings.mode" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-xs"><option value="date">Tanggal</option><option value="time">Jam</option><option value="datetime">Tanggal dan jam</option><option value="date_range">Rentang tanggal</option></select><button type="button" wire:click="saveFieldPresentation" class="mt-2 w-full rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-800">Simpan jenis tanggal</button></div>
+                        @elseif ($selectedField['type'] === 'rating')
+                            <div class="border-t border-slate-100 pt-3"><label for="rating-scale" class="mb-1.5 block text-xs font-medium text-slate-600">Jumlah bintang</label><select id="rating-scale" wire:model="fieldSettings.scale" class="w-full rounded-lg border border-slate-300 px-3 py-2 text-xs">@for ($scale = 3; $scale <= 10; $scale++)<option value="{{ $scale }}">{{ $scale }} bintang</option>@endfor</select><button type="button" wire:click="saveFieldPresentation" class="mt-2 w-full rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-800">Simpan skala</button></div>
+                        @elseif ($selectedField['type'] === 'slider')
+                            <div class="space-y-2 border-t border-slate-100 pt-3"><p class="text-xs font-medium text-slate-600">Rentang slider</p><div class="grid grid-cols-3 gap-1.5"><label class="text-[10px] text-slate-500">Min<input type="number" wire:model="fieldSettings.min" class="mt-1 w-full rounded border border-slate-300 px-1.5 py-1.5 text-xs"></label><label class="text-[10px] text-slate-500">Maks<input type="number" wire:model="fieldSettings.max" class="mt-1 w-full rounded border border-slate-300 px-1.5 py-1.5 text-xs"></label><label class="text-[10px] text-slate-500">Langkah<input type="number" min="0.01" step="any" wire:model="fieldSettings.step" class="mt-1 w-full rounded border border-slate-300 px-1.5 py-1.5 text-xs"></label></div><button type="button" wire:click="saveFieldPresentation" class="w-full rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-semibold text-emerald-800">Simpan rentang</button></div>
+                        @endif
                         @if (in_array($selectedField['type'], ['select', 'radio', 'checkbox'], true))
                             <div>
                                 <label for="field-options" class="mb-1.5 block text-xs font-medium text-slate-600">Pilihan <span class="font-normal text-slate-400">(satu per baris)</span></label>
@@ -309,7 +339,7 @@
                                 <div class="grid grid-cols-2 gap-2"><label class="text-[11px] text-slate-600">Jumlah minimum<input type="number" min="0" max="100" wire:model="fieldValidation.min_selections" class="mt-1 w-full rounded-lg border border-slate-300 px-2 py-1.5 text-xs"></label><label class="text-[11px] text-slate-600">Jumlah maksimum<input type="number" min="0" max="100" wire:model="fieldValidation.max_selections" class="mt-1 w-full rounded-lg border border-slate-300 px-2 py-1.5 text-xs"></label></div>
                                 <label class="block text-[11px] text-slate-600">Atau jumlah tepat<input type="number" min="0" max="100" wire:model="fieldValidation.exact_selections" class="mt-1 w-full rounded-lg border border-slate-300 px-2 py-1.5 text-xs"></label>
                             @elseif ($selectedField['type'] === 'file')
-                                <fieldset><legend class="mb-1 text-[11px] text-slate-600">Jenis file yang diizinkan</legend><div class="grid grid-cols-3 gap-1">@foreach ($validationFileTypes as $extension => $label)<label class="flex items-center gap-1 text-[10px] text-slate-600"><input type="checkbox" value="{{ $extension }}" wire:model="fieldValidation.allowed_types" class="rounded border-slate-300">{{ $label }}</label>@endforeach</div><p class="mt-1 text-[10px] text-slate-500">Tanpa pilihan, semua format aman yang didukung diizinkan.</p></fieldset>
+                                <fieldset><legend class="mb-1 text-[11px] text-slate-600">Jenis file yang diizinkan</legend><div class="grid grid-cols-3 gap-1">@foreach ($validationFileTypes as $extension => $label)<label wire:key="validation-file-type-{{ $selectedField['id'] }}-{{ $extension }}" class="flex items-center gap-1 text-[10px] text-slate-600"><input type="checkbox" value="{{ $extension }}" wire:model="selectedFileTypes" class="rounded border-slate-300">{{ $label }}</label>@endforeach</div><p class="mt-1 text-[10px] text-slate-500">Tanpa pilihan, semua format aman yang didukung diizinkan.</p></fieldset>
                                 <label class="block text-[11px] text-slate-600">Maksimum jumlah file<input type="number" min="1" max="5" wire:model="fieldValidation.max_files" class="mt-1 w-full rounded-lg border border-slate-300 px-2 py-1.5 text-xs"></label>
                                 <label class="block text-[11px] text-slate-600">Ukuran maksimum per file (KB)<input type="number" min="1" max="10240" wire:model="fieldValidation.max_size_kb" class="mt-1 w-full rounded-lg border border-slate-300 px-2 py-1.5 text-xs"></label>
                             @else
@@ -321,7 +351,7 @@
                         </section>
                         <div class="border-t border-slate-100 pt-3">
                             <button type="button" wire:click="duplicateField('{{ $selectedField['id'] }}')" class="w-full rounded-lg border border-slate-200 px-3 py-2 text-left text-xs font-semibold text-slate-700 hover:bg-slate-50">Duplikasi field</button>
-                            <button type="button" wire:click="deleteField('{{ $selectedField['id'] }}')" wire:confirm="Hapus field ini?" class="mt-2 w-full rounded-lg px-3 py-2 text-left text-xs font-semibold text-red-700 hover:bg-red-50">Hapus field</button>
+                            <button type="button" @click="$dispatch('formora-confirm', { message: 'Hapus field ini?', action: () => $wire.deleteField('{{ $selectedField['id'] }}') })" class="mt-2 w-full rounded-lg px-3 py-2 text-left text-xs font-semibold text-red-700 hover:bg-red-50">Hapus field</button>
                         </div>
                     </div>
                 @else
@@ -331,6 +361,15 @@
             </aside>
         </main>
     @endif
+
+    <div x-cloak x-show="confirmOpen" x-transition.opacity class="fixed inset-0 z-[70] grid place-items-center bg-slate-950/50 p-4" role="presentation" @click.self="confirmOpen = false">
+        <section x-show="confirmOpen" x-transition class="w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl" role="alertdialog" aria-modal="true" aria-labelledby="confirm-title" aria-describedby="confirm-description">
+            <div class="grid size-11 place-items-center rounded-full bg-amber-50 text-xl text-amber-700" aria-hidden="true">!</div>
+            <h2 id="confirm-title" class="mt-4 text-lg font-semibold text-slate-950">Konfirmasi tindakan</h2>
+            <p id="confirm-description" class="mt-2 text-sm leading-6 text-slate-600" x-text="confirmMessage"></p>
+            <div class="mt-6 flex justify-end gap-2"><button type="button" @click="confirmOpen = false; confirmAction = null" class="rounded-xl border border-slate-300 px-4 py-2.5 text-sm font-semibold text-slate-700 hover:bg-slate-50">Batal</button><button type="button" @click="const action = confirmAction; confirmOpen = false; confirmAction = null; action?.()" class="rounded-xl bg-red-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-red-800">Ya, lanjutkan</button></div>
+        </section>
+    </div>
 
     @script
         <script>

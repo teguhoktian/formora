@@ -143,6 +143,21 @@ class PublicFormTest extends TestCase
         $this->assertSame(0, $form->submissions()->count());
     }
 
+    public function test_searchable_select_uses_one_select2_style_control(): void
+    {
+        [$form] = $this->makePublishedForm([
+            ['type' => 'select', 'name' => 'region', 'label' => 'Wilayah', 'required' => true],
+        ]);
+
+        $this->get(route('public.forms.show', $form->slug))
+            ->assertOk()
+            ->assertSee('data-searchable-select', false)
+            ->assertSee('trigger.className = \'flex w-full items-center justify-between', false)
+            ->assertSee('dropdown.hidden = !dropdown.hidden', false)
+            ->assertSee('select.classList.add(\'sr-only\')', false)
+            ->assertDontSee("search.className = 'w-full rounded-xl border", false);
+    }
+
     public function test_hidden_required_field_is_skipped_and_hidden_answer_is_not_stored(): void
     {
         [$form, $version] = $this->makePublishedForm([
@@ -210,6 +225,7 @@ class PublicFormTest extends TestCase
 
         $submission = $form->submissions()->firstOrFail();
         $path = $submission->response_data['document']['private_path'];
+        $this->assertSame('dokumen.jpg', $submission->response_data['document']['original_name']);
         $this->assertStringStartsWith('form-submissions/'.$form->id.'/', $path);
         Storage::disk('local')->assertExists($path);
 
@@ -285,6 +301,39 @@ class PublicFormTest extends TestCase
         $this->assertSame(1, $form->submissions()->count());
     }
 
+    public function test_rating_slider_and_date_modes_render_and_validate(): void
+    {
+        [$form] = $this->makePublishedForm([
+            ['type' => 'rating', 'name' => 'rating', 'label' => 'Penilaian', 'required' => true],
+            ['type' => 'slider', 'name' => 'score', 'label' => 'Skor', 'required' => true, 'settings' => ['min' => 0, 'max' => 10, 'step' => 2]],
+            ['type' => 'date', 'name' => 'meeting', 'label' => 'Waktu rapat', 'required' => true, 'settings' => ['mode' => 'datetime']],
+            ['type' => 'date', 'name' => 'period', 'label' => 'Periode', 'required' => true, 'settings' => ['mode' => 'date_range']],
+        ]);
+
+        $this->get(route('public.forms.show', $form->slug))
+            ->assertOk()
+            ->assertSee('data-rating', false)
+            ->assertSee('data-number-slider', false)
+            ->assertSee('datetime-local', false)
+            ->assertSee('answers[period][start]', false);
+
+        $answers = [
+            'rating' => '4',
+            'score' => '6',
+            'meeting' => '2026-11-19T09:30',
+            'period' => ['start' => '2026-11-01', 'end' => '2026-11-19'],
+        ];
+        $this->post(route('public.forms.submit', $form->slug), ['answers' => $answers])->assertRedirect();
+        $this->assertSame($answers['period'], $form->submissions()->firstOrFail()->response_data['period']);
+
+        $answers['score'] = '3';
+        $answers['period'] = ['start' => '2026-11-20', 'end' => '2026-11-19'];
+        $this->from(route('public.forms.show', $form->slug))
+            ->post(route('public.forms.submit', $form->slug), ['answers' => $answers])
+            ->assertSessionHasErrors(['answers.score', 'answers.period']);
+        $this->assertSame(1, $form->submissions()->count());
+    }
+
     public function test_public_submit_route_is_rate_limited(): void
     {
         [$form] = $this->makePublishedForm([
@@ -299,7 +348,7 @@ class PublicFormTest extends TestCase
         $this->post($url, ['website' => 'bot'])->assertTooManyRequests();
     }
 
-    /** @param list<array{type: string, name: string, label: string, required: bool, page?: int, validation?: array<string, mixed>}> $fieldDefinitions
+    /** @param list<array{type: string, name: string, label: string, required: bool, page?: int, validation?: array<string, mixed>, settings?: array<string, mixed>}> $fieldDefinitions
      * @return array{Form, FormVersion}
      */
     private function makePublishedForm(array $fieldDefinitions): array
@@ -318,6 +367,7 @@ class PublicFormTest extends TestCase
             $field['label'] = $definition['label'];
             $field['required'] = $definition['required'];
             $field['validation'] = $definition['validation'] ?? [];
+            $field['settings'] = $definition['settings'] ?? $field['settings'];
             $schema['pages'][$pageIndex]['fields'][] = $field;
         }
         $draft = $form->versions()->create([

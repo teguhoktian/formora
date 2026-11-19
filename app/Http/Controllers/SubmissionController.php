@@ -75,7 +75,39 @@ class SubmissionController extends Controller
         Gate::authorize('viewSubmissions', $form);
         $submission = $form->submissions()->with('formVersion:id,schema')->whereKey($submission->id)->firstOrFail();
 
-        return view('submissions.show', ['form' => $form, 'submission' => $submission, 'answers' => $presenter->present($submission)]);
+        return view('submissions.show', [
+            'form' => $form,
+            'submission' => $submission,
+            'answers' => $presenter->present($submission),
+            'fileAttachments' => $presenter->fileAttachments($submission),
+            'canDownloadFiles' => $request->user()->can('downloadSubmissions', $form),
+        ]);
+    }
+
+    public function downloadFile(Request $request, Form $form, FormSubmission $submission, string $fieldName, int $fileIndex, CurrentWorkspace $currentWorkspace): StreamedResponse
+    {
+        $form = $this->authorizedForm($request, $form, $currentWorkspace);
+        Gate::authorize('downloadSubmissions', $form);
+        $submission = $form->submissions()->whereKey($submission->id)->firstOrFail();
+        $files = $submission->response_data[$fieldName] ?? null;
+        $file = is_array($files) && array_is_list($files) ? ($files[$fileIndex] ?? null) : ($fileIndex === 0 ? $files : null);
+        abort_unless(is_array($file) && is_string($file['private_path'] ?? null), 404);
+
+        $expectedPrefix = 'form-submissions/'.$form->id.'/'.$submission->reference_number.'/';
+        $path = $file['private_path'];
+        abort_unless(str_starts_with($path, $expectedPrefix) && Storage::disk('local')->exists($path), 404);
+
+        $fileName = $file['original_name'] ?? basename($path);
+        $fileName = is_string($fileName) && $fileName !== '' ? basename($fileName) : 'lampiran';
+        AuditLog::query()->create([
+            'workspace_id' => $form->workspace_id,
+            'actor_id' => $request->user()->id,
+            'event' => 'submission.file_downloaded',
+            'subject_type' => FormSubmission::class,
+            'subject_id' => $submission->id,
+        ]);
+
+        return Storage::disk('local')->download($path, $fileName);
     }
 
     public function update(Request $request, Form $form, FormSubmission $submission, CurrentWorkspace $currentWorkspace): RedirectResponse

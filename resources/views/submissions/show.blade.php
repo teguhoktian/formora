@@ -6,7 +6,7 @@
             @if (session('status')) <p role="status" class="rounded-xl bg-emerald-50 p-3 text-sm text-emerald-800">{{ session('status') }}</p> @endif
             <section class="divide-y divide-slate-100 rounded-2xl border border-slate-200/80 bg-white px-5 shadow-[0_2px_12px_-8px_rgba(15,23,42,0.15)]">
                 @forelse ($answers as $label => $value)
-                    <div class="grid gap-1 py-4 sm:grid-cols-3"><dt class="text-sm font-medium text-slate-600">{{ $label }}</dt><dd class="whitespace-pre-wrap text-sm text-slate-900 sm:col-span-2">{{ is_array($value) ? implode(', ', array_map('strval', $value)) : $value }}</dd></div>
+                    <div class="grid gap-1 py-4 sm:grid-cols-3"><dt class="text-sm font-medium text-slate-600">{{ $label }}</dt><dd class="space-y-2 text-sm text-slate-900 sm:col-span-2">@if (isset($fileAttachments[$label]))@foreach ($fileAttachments[$label] as $file)<div class="flex flex-wrap items-center gap-x-2 gap-y-1"><span>{{ $file['name'] }}</span>@if ($canDownloadFiles)<a href="{{ route('forms.submissions.files.download', [$form, $submission, $file['field'], $file['index']]) }}" class="inline-flex items-center gap-1 font-semibold text-emerald-800 underline underline-offset-2 hover:text-emerald-900"><span aria-hidden="true">↓</span>Unduh</a>@endif</div>@endforeach @else<span class="whitespace-pre-wrap">{{ is_array($value) ? implode(', ', array_map('strval', $value)) : $value }}</span>@endif</dd></div>
                 @empty <p class="py-6 text-sm text-slate-500">Tidak ada jawaban.</p> @endforelse
             </section>
             @can('update', $form)

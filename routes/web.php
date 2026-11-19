@@ -42,6 +42,9 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('forms/{form}/submissions', [SubmissionController::class, 'index'])->name('forms.submissions.index');
     Route::post('forms/{form}/submissions/export', [SubmissionController::class, 'export'])->middleware('throttle:5,1')->name('forms.submissions.export');
     Route::get('forms/{form}/submissions/exports/{export}', [SubmissionController::class, 'download'])->name('forms.submissions.exports.download');
+    Route::get('forms/{form}/submissions/{submission}/files/{fieldName}/{fileIndex}', [SubmissionController::class, 'downloadFile'])
+        ->where(['fieldName' => '[a-z][a-z0-9_]{0,63}', 'fileIndex' => '[0-9]{1,3}'])
+        ->name('forms.submissions.files.download');
     Route::get('forms/{form}/submissions/{submission}', [SubmissionController::class, 'show'])->name('forms.submissions.show');
     Route::patch('forms/{form}/submissions/{submission}', [SubmissionController::class, 'update'])->name('forms.submissions.update');
 

@@ -189,6 +189,44 @@ class FormBuilderTest extends TestCase
         $this->assertSame(['min_length' => 3, 'custom_message' => 'Jawaban terlalu singkat.'], $savedField['validation']);
     }
 
+    public function test_builder_can_edit_form_description_and_save_selected_file_types(): void
+    {
+        [$owner, $form] = $this->makeFormFor('owner');
+        $schemas = app(FormSchemaService::class);
+        $schema = $form->versions()->firstOrFail()->schema;
+        $field = $schemas->newField('file', $schema);
+        $schema['pages'][0]['fields'][] = $field;
+        $form->versions()->firstOrFail()->update(['schema' => $schema]);
+
+        $component = Livewire::actingAs($owner)->test(FormBuilder::class, ['formId' => $form->id])
+            ->set('formDescription', 'Deskripsi yang tampil pada form publik.');
+        $component->assertSet('saveState', 'saved');
+        $this->assertSame('Deskripsi yang tampil pada form publik.', $form->fresh()->description);
+
+        $component->set('selectedFileTypes', ['jpg'])->call('saveFieldValidation')->assertSet('saveState', 'saved');
+        $savedField = $form->versions()->firstOrFail()->fresh()->schema['pages'][0]['fields'][0];
+        $this->assertSame(['jpg'], $savedField['validation']['allowed_types']);
+    }
+
+    public function test_builder_can_configure_rating_scale(): void
+    {
+        [$owner, $form] = $this->makeFormFor('owner');
+        $schemas = app(FormSchemaService::class);
+        $schema = $form->versions()->firstOrFail()->schema;
+        $field = $schemas->newField('rating', $schema);
+        $schema['pages'][0]['fields'][] = $field;
+        $form->versions()->firstOrFail()->update(['schema' => $schema]);
+
+        Livewire::actingAs($owner)
+            ->test(FormBuilder::class, ['formId' => $form->id])
+            ->set('fieldSettings.scale', '8')
+            ->call('saveFieldPresentation')
+            ->assertSet('saveState', 'saved');
+
+        $saved = $form->versions()->firstOrFail()->fresh()->schema['pages'][0]['fields'][0];
+        $this->assertSame(8, $saved['settings']['scale']);
+    }
+
     public function test_viewer_cannot_open_or_mutate_the_builder(): void
     {
         [$viewer, $form] = $this->makeFormFor('viewer');

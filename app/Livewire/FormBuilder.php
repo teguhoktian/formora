@@ -26,6 +26,8 @@ class FormBuilder extends Component
 
     public string $formTitle = '';
 
+    public string $formDescription = '';
+
     public string $selectedPageId = '';
 
     public ?string $selectedFieldId = null;
@@ -49,6 +51,12 @@ class FormBuilder extends Component
     /** @var array<string, mixed> */
     public array $fieldValidation = [];
 
+    /** @var list<string> */
+    public array $selectedFileTypes = [];
+
+    /** @var array<string, mixed> */
+    public array $fieldSettings = [];
+
     public string $pageTitle = '';
 
     public string $submitLabel = 'Kirim';
@@ -67,6 +75,7 @@ class FormBuilder extends Component
         $form = $this->currentForm();
         Gate::authorize('update', $form);
         $this->formTitle = $form->title;
+        $this->formDescription = $form->description ?? '';
 
         $schema = $builder->ensureDraft($form, $schemas);
         $this->selectedPageId = $schema['pages'][0]['id'];
@@ -84,6 +93,15 @@ class FormBuilder extends Component
         $this->attemptSave(function () use ($value): void {
             $validated = validator(['title' => $value], ['title' => ['required', 'string', 'max:160']])->validate();
             $this->currentForm()->update(['title' => $validated['title']]);
+        });
+    }
+
+    public function updatedFormDescription(string $value): void
+    {
+        $this->authorizeCurrentForm();
+        $this->attemptSave(function () use ($value): void {
+            $validated = validator(['description' => $value], ['description' => ['nullable', 'string', 'max:2000']])->validate();
+            $this->currentForm()->update(['description' => $validated['description'] === '' ? null : $validated['description']]);
         });
     }
 
@@ -230,6 +248,11 @@ class FormBuilder extends Component
             $pageIndex = $this->pageIndex($schema, $this->selectedPageId);
             $fieldIndex = $this->fieldIndex($schema['pages'][$pageIndex]['fields'], $this->selectedFieldId);
             $validation = array_filter($this->fieldValidation, fn (mixed $value): bool => $value !== '' && $value !== null && $value !== []);
+            if ($this->selectedFileTypes !== []) {
+                $validation['allowed_types'] = array_values(array_unique($this->selectedFileTypes));
+            } else {
+                unset($validation['allowed_types']);
+            }
             if (($validation['operator'] ?? null) === 'between') {
                 unset($validation['value']);
             } else {
@@ -249,6 +272,29 @@ class FormBuilder extends Component
             }
             $schema['pages'][$pageIndex]['fields'][$fieldIndex]['validation'] = $validation;
             $schema = $schemas->validate($schema);
+            $this->saveSchema($schema, schemas: $schemas);
+            $this->syncFieldDraft($schema['pages'][$pageIndex]['fields'][$fieldIndex]);
+        });
+    }
+
+    public function saveFieldPresentation(FormSchemaService $schemas): void
+    {
+        $this->authorizeCurrentForm();
+        $this->attemptSave(function () use ($schemas): void {
+            abort_if($this->selectedFieldId === null, 422, 'Pilih field yang akan diatur.');
+            $schema = $this->schema();
+            $pageIndex = $this->pageIndex($schema, $this->selectedPageId);
+            $fieldIndex = $this->fieldIndex($schema['pages'][$pageIndex]['fields'], $this->selectedFieldId);
+            $schema['pages'][$pageIndex]['fields'][$fieldIndex]['settings'] = $this->fieldSettings;
+            $schema = $schemas->validate($schema);
+            $type = $schema['pages'][$pageIndex]['fields'][$fieldIndex]['type'];
+            if ($type === 'rating') {
+                $schema['pages'][$pageIndex]['fields'][$fieldIndex]['settings']['scale'] = (int) $schema['pages'][$pageIndex]['fields'][$fieldIndex]['settings']['scale'];
+            } elseif ($type === 'slider') {
+                foreach (['min', 'max', 'step'] as $key) {
+                    $schema['pages'][$pageIndex]['fields'][$fieldIndex]['settings'][$key] += 0;
+                }
+            }
             $this->saveSchema($schema, schemas: $schemas);
             $this->syncFieldDraft($schema['pages'][$pageIndex]['fields'][$fieldIndex]);
         });
@@ -616,6 +662,8 @@ class FormBuilder extends Component
         $this->visibilityFieldId = $field['visibility']['field_id'] ?? '';
         $this->visibilityValue = $field['visibility']['value'] ?? '';
         $this->fieldValidation = $field['validation'] ?? [];
+        $this->selectedFileTypes = array_values($this->fieldValidation['allowed_types'] ?? []);
+        $this->fieldSettings = $field['settings'] ?? [];
     }
 
     private function clearFieldDraft(): void
@@ -628,5 +676,7 @@ class FormBuilder extends Component
         $this->visibilityFieldId = '';
         $this->visibilityValue = '';
         $this->fieldValidation = [];
+        $this->selectedFileTypes = [];
+        $this->fieldSettings = [];
     }
 }

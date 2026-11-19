@@ -68,13 +68,22 @@
                                     @php($fieldName = 'answers['.$field['name'].']')
                                     @php($fieldValidation = $field['validation'] ?? [])
                                     <div class="space-y-2" data-field-id="{{ $field['id'] }}" data-field-name="{{ $field['name'] }}" @if (is_array($field['visibility'] ?? null)) data-visibility-source="{{ $field['visibility']['field_id'] }}" data-visibility-value="{{ $field['visibility']['value'] }}" @endif>
-                                        <label @if (!in_array($field['type'], ['radio', 'checkbox', 'smart_address'], true)) for="field-{{ $field['id'] }}" @endif class="block text-sm font-semibold text-slate-800">
+                                        <label @if (!in_array($field['type'], ['radio', 'checkbox', 'smart_address'], true) && !($field['type'] === 'date' && ($field['settings']['mode'] ?? 'date') === 'date_range')) for="field-{{ $field['id'] }}" @endif class="block text-sm font-semibold text-slate-800">
                                             {{ $field['label'] }}@if ($field['required']) <span class="text-red-600" aria-label="wajib diisi">*</span>@endif
                                         </label>
-                                        @if ($field['type'] === 'textarea')
+                                        @if ($field['type'] === 'date' && ($field['settings']['mode'] ?? 'date') === 'date_range')
+                                            <div class="grid gap-3 sm:grid-cols-2"><label class="text-xs font-medium text-slate-600">Dari<input id="field-{{ $field['id'] }}-start" type="date" name="{{ $fieldName }}[start]" @required($field['required']) @if (isset($fieldValidation['min_date'])) min="{{ $fieldValidation['min_date'] }}" @endif @if (isset($fieldValidation['max_date'])) max="{{ $fieldValidation['max_date'] }}" @endif class="mt-1 w-full rounded-xl border border-slate-300 px-3.5 py-3 text-sm"></label><label class="text-xs font-medium text-slate-600">Sampai<input id="field-{{ $field['id'] }}-end" type="date" name="{{ $fieldName }}[end]" @required($field['required']) @if (isset($fieldValidation['min_date'])) min="{{ $fieldValidation['min_date'] }}" @endif @if (isset($fieldValidation['max_date'])) max="{{ $fieldValidation['max_date'] }}" @endif class="mt-1 w-full rounded-xl border border-slate-300 px-3.5 py-3 text-sm"></label></div>
+                                        @elseif ($field['type'] === 'rating')
+                                            <fieldset id="field-{{ $field['id'] }}" data-rating class="flex flex-wrap gap-1" aria-label="Pilih rating dari 1 sampai {{ $field['settings']['scale'] }} bintang">@for ($rating = 1; $rating <= $field['settings']['scale']; $rating++)<label data-rating-choice="{{ $rating }}" class="cursor-pointer rounded-lg p-1 text-3xl leading-none text-slate-300 transition hover:text-amber-400"><input class="sr-only" type="radio" name="{{ $fieldName }}" value="{{ $rating }}" @required($field['required']) aria-label="{{ $rating }} dari {{ $field['settings']['scale'] }} bintang"><span aria-hidden="true">★</span></label>@endfor</fieldset>
+                                        @elseif ($field['type'] === 'slider')
+                                            <div class="space-y-2"><input id="field-{{ $field['id'] }}" data-number-slider type="range" name="{{ $fieldName }}" min="{{ $field['settings']['min'] }}" max="{{ $field['settings']['max'] }}" step="{{ $field['settings']['step'] }}" value="{{ $field['settings']['min'] }}" @required($field['required']) class="w-full accent-emerald-700"><div class="flex justify-between text-xs text-slate-500"><span>{{ $field['settings']['min'] }}</span><output data-slider-value for="field-{{ $field['id'] }}" class="font-semibold text-slate-800">{{ $field['settings']['min'] }}</output><span>{{ $field['settings']['max'] }}</span></div></div>
+                                        @elseif ($field['type'] === 'date' && ($field['settings']['mode'] ?? 'date') !== 'date')
+                                            @php($dateMode = $field['settings']['mode'])
+                                            <input id="field-{{ $field['id'] }}" type="{{ $dateMode === 'time' ? 'time' : ($dateMode === 'datetime' ? 'datetime-local' : 'date') }}" name="{{ $fieldName }}" @required($field['required']) class="w-full rounded-xl border border-slate-300 px-3.5 py-3 text-sm focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/20">
+                                        @elseif ($field['type'] === 'textarea')
                                             <textarea id="field-{{ $field['id'] }}" name="{{ $fieldName }}" rows="4" maxlength="{{ $fieldValidation['max_length'] ?? 20000 }}" @if (isset($fieldValidation['min_length'])) minlength="{{ $fieldValidation['min_length'] }}" @endif class="w-full rounded-xl border border-slate-300 px-3.5 py-3 text-sm focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/20"></textarea>
                                         @elseif ($field['type'] === 'select')
-                                            <select id="field-{{ $field['id'] }}" name="{{ $fieldName }}" class="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-3 text-sm focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/20">
+                                            <select id="field-{{ $field['id'] }}" name="{{ $fieldName }}" data-searchable-select class="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-3 text-sm focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/20">
                                                 <option value="">Pilih jawaban</option>
                                                 @foreach ($field['settings']['options'] as $option)<option value="{{ $option['value'] }}">{{ $option['label'] }}</option>@endforeach
                                             </select>
@@ -90,8 +99,11 @@
                                         @elseif ($field['type'] === 'file')
                                             @php($allowedFileTypes = $fieldValidation['allowed_types'] ?? ['pdf', 'jpg', 'jpeg', 'png', 'doc', 'docx'])
                                             @php($maxFiles = $fieldValidation['max_files'] ?? 1)
-                                            <input id="field-{{ $field['id'] }}" type="file" name="{{ $fieldName }}{{ $maxFiles > 1 ? '[]' : '' }}" @if ($maxFiles > 1) multiple @endif accept="{{ implode(',', array_map(fn ($extension) => '.'.$extension, $allowedFileTypes)) }}" class="block w-full rounded-xl border border-slate-300 text-sm text-slate-600 file:mr-4 file:border-0 file:bg-slate-100 file:px-4 file:py-3 file:text-sm file:font-semibold file:text-slate-700">
-                                            <p class="text-xs text-slate-500">{{ strtoupper(implode(', ', $allowedFileTypes)) }} · maksimal {{ $maxFiles }} file · {{ number_format(($fieldValidation['max_size_kb'] ?? 10240) / 1024, 1) }} MB per file</p>
+                                            <div data-file-manager data-max-files="{{ $maxFiles }}" data-max-size-kb="{{ $fieldValidation['max_size_kb'] ?? 10240 }}" class="space-y-3">
+                                                <input id="field-{{ $field['id'] }}" type="file" name="{{ $fieldName }}{{ $maxFiles > 1 ? '[]' : '' }}" @if ($maxFiles > 1) multiple @endif @required($field['required']) accept="{{ implode(',', array_map(fn ($extension) => '.'.$extension, $allowedFileTypes)) }}" class="sr-only" data-file-input>
+                                                <label for="field-{{ $field['id'] }}" data-file-dropzone tabindex="0" class="flex cursor-pointer flex-col items-center rounded-2xl border-2 border-dashed border-slate-300 bg-slate-50 px-5 py-8 text-center transition hover:border-emerald-400 hover:bg-emerald-50 focus:outline-none focus:ring-2 focus:ring-emerald-600"><span class="grid size-12 place-items-center rounded-xl bg-white text-2xl text-emerald-700 shadow-sm" aria-hidden="true">⇧</span><span class="mt-3 text-sm font-semibold text-slate-800">Tarik file ke sini atau <span class="text-emerald-700">pilih file</span></span><span class="mt-1 text-xs text-slate-500">{{ strtoupper(implode(', ', $allowedFileTypes)) }} · maksimal {{ $maxFiles }} file · {{ number_format(($fieldValidation['max_size_kb'] ?? 10240) / 1024, 1) }} MB per file</span></label>
+                                                <p data-file-error aria-live="polite" class="hidden text-xs font-medium text-red-700"></p><ul data-file-list class="grid gap-2 sm:grid-cols-2"></ul>
+                                            </div>
                                         @elseif ($field['type'] === 'smart_address')
                                             <div class="grid gap-3 sm:grid-cols-2" data-smart-address data-regions-url="{{ url('/smart-fields/regions') }}">
                                                 <div>
@@ -127,7 +139,7 @@
                                         @elseif (isset($smartFieldDefinitions[$field['type']]))
                                             @php($smartDefinition = $smartFieldDefinitions[$field['type']])
                                             @if ($smartDefinition['input_type'] === 'select')
-                                                <select id="field-{{ $field['id'] }}" name="{{ $fieldName }}" @required($field['required']) class="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-3 text-sm focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/20">
+                                            <select id="field-{{ $field['id'] }}" name="{{ $fieldName }}" data-searchable-select @required($field['required']) class="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-3 text-sm focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/20">
                                                     <option value="">{{ $smartDefinition['placeholder'] }}</option>
                                                     @foreach ($smartDefinition['options'] ?? [] as $bankName)
                                                         <option value="{{ $bankName }}">{{ $bankName }}</option>
@@ -164,6 +176,177 @@
     </main>
 
     <script>
+        document.querySelectorAll('[data-searchable-select]').forEach((select) => {
+            const fieldId = select.id;
+            const wrapper = document.createElement('div');
+            wrapper.className = 'relative';
+            select.parentNode.insertBefore(wrapper, select);
+            wrapper.append(select);
+            select.classList.add('sr-only');
+            select.tabIndex = -1;
+            select.setAttribute('aria-hidden', 'true');
+            select.id = `${fieldId}-native`;
+
+            const trigger = document.createElement('button');
+            trigger.type = 'button';
+            trigger.id = fieldId;
+            trigger.className = 'flex w-full items-center justify-between rounded-xl border border-slate-300 bg-white px-3.5 py-3 text-left text-sm text-slate-700 focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/20';
+            trigger.setAttribute('aria-haspopup', 'listbox');
+            trigger.setAttribute('aria-expanded', 'false');
+            trigger.innerHTML = '<span data-select-value></span><span aria-hidden="true" class="ml-3 text-slate-400">⌄</span>';
+
+            const dropdown = document.createElement('div');
+            dropdown.className = 'absolute z-30 mt-1 w-full rounded-xl border border-slate-200 bg-white p-2 shadow-xl';
+            dropdown.hidden = true;
+            const search = document.createElement('input');
+            search.type = 'search';
+            search.placeholder = 'Cari pilihan…';
+            search.setAttribute('aria-label', `Cari pilihan untuk ${select.id}`);
+            search.className = 'mb-2 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-emerald-600 focus:outline-none focus:ring-2 focus:ring-emerald-600/20';
+            const list = document.createElement('div');
+            list.className = 'max-h-56 space-y-0.5 overflow-y-auto';
+            list.setAttribute('role', 'listbox');
+            dropdown.append(search, list);
+            wrapper.append(trigger, dropdown);
+
+            const selectedLabel = () => select.selectedOptions[0]?.textContent?.trim() || 'Pilih jawaban';
+            const renderOptions = () => {
+                const query = search.value.trim().toLocaleLowerCase('id');
+                list.replaceChildren();
+                Array.from(select.options).filter((option) => option.value !== '' && option.textContent.toLocaleLowerCase('id').includes(query)).forEach((option) => {
+                    const item = document.createElement('button');
+                    item.type = 'button';
+                    item.role = 'option';
+                    item.className = `w-full rounded-lg px-3 py-2 text-left text-sm hover:bg-emerald-50 ${option.selected ? 'bg-emerald-50 font-semibold text-emerald-800' : 'text-slate-700'}`;
+                    item.textContent = option.textContent;
+                    item.setAttribute('aria-selected', String(option.selected));
+                    item.addEventListener('click', () => {
+                        select.value = option.value;
+                        select.dispatchEvent(new Event('change', { bubbles: true }));
+                        dropdown.hidden = true;
+                        trigger.setAttribute('aria-expanded', 'false');
+                        trigger.querySelector('[data-select-value]').textContent = selectedLabel();
+                        trigger.focus();
+                    });
+                    list.append(item);
+                });
+                if (!list.childElementCount) {
+                    const empty = document.createElement('p');
+                    empty.className = 'px-3 py-2 text-sm text-slate-500';
+                    empty.textContent = 'Pilihan tidak ditemukan';
+                    list.append(empty);
+                }
+            };
+            trigger.querySelector('[data-select-value]').textContent = selectedLabel();
+            renderOptions();
+            trigger.addEventListener('click', () => {
+                dropdown.hidden = !dropdown.hidden;
+                trigger.setAttribute('aria-expanded', String(!dropdown.hidden));
+                if (!dropdown.hidden) { search.value = ''; renderOptions(); search.focus(); }
+            });
+            search.addEventListener('input', renderOptions);
+            search.addEventListener('keydown', (event) => {
+                if (event.key === 'Escape') { dropdown.hidden = true; trigger.setAttribute('aria-expanded', 'false'); trigger.focus(); }
+            });
+            document.addEventListener('click', (event) => {
+                if (!wrapper.contains(event.target)) { dropdown.hidden = true; trigger.setAttribute('aria-expanded', 'false'); }
+            });
+            select.addEventListener('change', () => {
+                trigger.querySelector('[data-select-value]').textContent = selectedLabel();
+                renderOptions();
+            });
+        });
+
+        document.querySelectorAll('[data-rating]').forEach((rating) => {
+            rating.addEventListener('change', (event) => {
+                const chosen = Number(event.target.value);
+                rating.querySelectorAll('[data-rating-choice]').forEach((choice) => {
+                    choice.classList.toggle('text-amber-400', Number(choice.dataset.ratingChoice) <= chosen);
+                    choice.classList.toggle('text-slate-300', Number(choice.dataset.ratingChoice) > chosen);
+                });
+            });
+        });
+
+        document.querySelectorAll('[data-number-slider]').forEach((slider) => {
+            const output = slider.closest('div')?.querySelector('[data-slider-value]');
+            slider.addEventListener('input', () => { if (output) output.value = slider.value; });
+        });
+
+        document.querySelectorAll('[data-file-manager]').forEach((manager) => {
+            const input = manager.querySelector('[data-file-input]');
+            const dropzone = manager.querySelector('[data-file-dropzone]');
+            const list = manager.querySelector('[data-file-list]');
+            const error = manager.querySelector('[data-file-error]');
+            const maxFiles = Number(manager.dataset.maxFiles) || 1;
+            const maxSize = (Number(manager.dataset.maxSizeKb) || 10240) * 1024;
+            const acceptedExtensions = (input.accept || '').split(',').map((value) => value.trim().replace(/^\./, '').toLowerCase()).filter(Boolean);
+            let objectUrls = [];
+            const render = () => {
+                objectUrls.forEach((url) => URL.revokeObjectURL(url));
+                objectUrls = [];
+                list.replaceChildren();
+                Array.from(input.files || []).forEach((file, index) => {
+                    const item = document.createElement('li');
+                    item.className = 'flex min-w-0 items-center gap-3 rounded-xl border border-slate-200 bg-white p-2.5';
+                    if (file.type.startsWith('image/')) {
+                        const image = document.createElement('img');
+                        image.src = URL.createObjectURL(file);
+                        objectUrls.push(image.src);
+                        image.alt = '';
+                        image.className = 'size-12 rounded-lg object-cover';
+                        item.append(image);
+                    } else {
+                        const icon = document.createElement('span');
+                        icon.className = 'grid size-12 shrink-0 place-items-center rounded-lg bg-slate-100 text-[10px] font-bold uppercase text-slate-600';
+                        icon.textContent = file.name.split('.').pop() || 'FILE';
+                        item.append(icon);
+                    }
+                    const details = document.createElement('span');
+                    details.className = 'min-w-0 flex-1';
+                    const fileName = document.createElement('span');
+                    fileName.className = 'block truncate text-xs font-semibold text-slate-800';
+                    fileName.textContent = file.name;
+                    const fileSize = document.createElement('span');
+                    fileSize.className = 'text-[10px] text-slate-500';
+                    fileSize.textContent = `${(file.size / 1024).toFixed(0)} KB`;
+                    details.append(fileName, fileSize);
+                    const remove = document.createElement('button');
+                    remove.type = 'button';
+                    remove.className = 'rounded-lg px-2 py-1 text-xs font-semibold text-red-700 hover:bg-red-50';
+                    remove.textContent = 'Hapus';
+                    remove.setAttribute('aria-label', `Hapus ${file.name}`);
+                    remove.addEventListener('click', () => {
+                        const transfer = new DataTransfer();
+                        Array.from(input.files).forEach((existing, fileIndex) => { if (fileIndex !== index) transfer.items.add(existing); });
+                        input.files = transfer.files;
+                        error.classList.add('hidden');
+                        render();
+                    });
+                    item.append(details, remove);
+                    list.append(item);
+                });
+            };
+            const setFiles = (files) => {
+                const transfer = new DataTransfer();
+                const rejected = [];
+                Array.from(files).forEach((file) => {
+                    const extension = file.name.split('.').pop().toLowerCase();
+                    if (transfer.files.length >= maxFiles) rejected.push(`Maksimal ${maxFiles} file.`);
+                    else if (file.size > maxSize) rejected.push(`${file.name} melebihi ukuran maksimum.`);
+                    else if (acceptedExtensions.length && !acceptedExtensions.includes(extension)) rejected.push(`Jenis ${extension} tidak diizinkan.`);
+                    else transfer.items.add(file);
+                });
+                input.files = transfer.files;
+                error.textContent = [...new Set(rejected)].join(' ');
+                error.classList.toggle('hidden', rejected.length === 0);
+                render();
+            };
+            input.addEventListener('change', () => setFiles(input.files));
+            dropzone.addEventListener('dragover', (event) => { event.preventDefault(); dropzone.classList.add('border-emerald-500', 'bg-emerald-50'); });
+            dropzone.addEventListener('dragleave', () => dropzone.classList.remove('border-emerald-500', 'bg-emerald-50'));
+            dropzone.addEventListener('drop', (event) => { event.preventDefault(); dropzone.classList.remove('border-emerald-500', 'bg-emerald-50'); setFiles(event.dataTransfer.files); });
+        });
+
         document.querySelectorAll('[data-public-stepper]').forEach((form) => {
             const pages = Array.from(form.querySelectorAll('[data-public-page]'));
             const pageInput = form.querySelector('[data-current-page]');
@@ -195,7 +378,7 @@
                     if (!isVisible && wasVisible) {
                         controls.forEach((control) => {
                             if (control.type === 'checkbox' || control.type === 'radio') control.checked = false;
-                            else if (control.type === 'file') control.value = '';
+                            else if (control.type === 'file') { control.value = ''; control.dispatchEvent(new Event('change', { bubbles: true })); }
                             else control.value = '';
                         });
                     }

@@ -91,13 +91,41 @@ class PublicSubmissionService
                     $rules[$key] = [$presentRule, 'numeric'];
                     break;
                 case 'date':
-                    $rules[$key] = [$presentRule, 'date_format:Y-m-d'];
-                    if (isset($field['validation']['min_date'])) {
-                        $rules[$key][] = 'after_or_equal:'.$field['validation']['min_date'];
+                    $mode = $field['settings']['mode'] ?? 'date';
+                    if ($mode === 'date_range') {
+                        $rules[$key] = $field['required'] ? ['required', 'array:start,end'] : ['sometimes', 'array:start,end'];
+                        foreach (['start', 'end'] as $bound) {
+                            $dateKey = $key.'.'.$bound;
+                            $rules[$dateKey] = [$field['required'] ? 'required' : 'nullable', 'date_format:Y-m-d'];
+                            if (isset($field['validation']['min_date'])) {
+                                $rules[$dateKey][] = 'after_or_equal:'.$field['validation']['min_date'];
+                            }
+                            if (isset($field['validation']['max_date'])) {
+                                $rules[$dateKey][] = 'before_or_equal:'.$field['validation']['max_date'];
+                            }
+                        }
+                    } else {
+                        $dateFormat = match ($mode) {
+                            'time' => 'H:i',
+                            'datetime' => 'Y-m-d\\TH:i',
+                            default => 'Y-m-d',
+                        };
+                        $rules[$key] = [$presentRule, 'date_format:'.$dateFormat];
+                        if ($mode === 'date') {
+                            if (isset($field['validation']['min_date'])) {
+                                $rules[$key][] = 'after_or_equal:'.$field['validation']['min_date'];
+                            }
+                            if (isset($field['validation']['max_date'])) {
+                                $rules[$key][] = 'before_or_equal:'.$field['validation']['max_date'];
+                            }
+                        }
                     }
-                    if (isset($field['validation']['max_date'])) {
-                        $rules[$key][] = 'before_or_equal:'.$field['validation']['max_date'];
-                    }
+                    break;
+                case 'rating':
+                    $rules[$key] = [$presentRule, 'integer', Rule::in(range(1, (int) $field['settings']['scale']))];
+                    break;
+                case 'slider':
+                    $rules[$key] = [$presentRule, 'numeric', 'min:'.$field['settings']['min'], 'max:'.$field['settings']['max']];
                     break;
                 case 'select':
                 case 'radio':
@@ -267,6 +295,19 @@ class PublicSubmissionService
                         $fail('Nilai '.$field['label'].' tidak memenuhi batas yang ditentukan.');
                     }
                 }
+
+                if ($field['type'] === 'slider' && is_numeric($value)) {
+                    $settings = $field['settings'];
+                    $steps = ((float) $value - (float) $settings['min']) / (float) $settings['step'];
+                    if (abs($steps - round($steps)) > 0.000001) {
+                        $fail('Pilih nilai slider pada langkah yang tersedia.');
+                    }
+                }
+
+                if ($field['type'] === 'date' && ($field['settings']['mode'] ?? 'date') === 'date_range' && is_array($value)
+                    && is_string($value['start'] ?? null) && is_string($value['end'] ?? null) && $value['start'] > $value['end']) {
+                    $fail('Tanggal akhir '.$field['label'].' harus setelah tanggal awal.');
+                }
             }
         });
 
@@ -293,7 +334,7 @@ class PublicSubmissionService
                         throw new \RuntimeException('Private upload storage failed.');
                     }
                     $storedPaths[] = $path;
-                    $storedFiles[] = ['private_path' => $path];
+                    $storedFiles[] = ['private_path' => $path, 'original_name' => basename($file->getClientOriginalName())];
                 }
                 if ($storedFiles !== []) {
                     $answers[$name] = is_array($answer) ? $storedFiles : $storedFiles[0];

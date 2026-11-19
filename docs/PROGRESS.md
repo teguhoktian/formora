@@ -19,6 +19,28 @@ Validasi penyempurnaan:
 - `npm run build` — lulus; ada peringatan opsional `fontaine` untuk fallback font.
 - `git diff --check` — lulus.
 
+## Penyempurnaan pasca-MVP — Builder dan kontrol form publik
+
+Status: implementasi selesai.
+
+- Deskripsi form sekarang dapat ditulis dan diubah dari Pengaturan; perubahan disimpan pada form dan tampil pada halaman publik.
+- Pemilihan jenis file memakai state checkbox terpisah yang disimpan sebagai daftar tipe, sehingga pilihan satu checkbox tidak mengubah yang lain. Pesan validasi schema ditampilkan sebagai pesan Bahasa Indonesia, bukan nama jalur validasi.
+- Menambahkan Rating bintang (3–10 bintang) dan Slider angka dengan batas serta langkah yang dapat diatur; backend memvalidasi nilai rating dan ketepatan langkah slider.
+- Field Tanggal menyediakan mode tanggal, jam, tanggal dan jam, serta rentang tanggal. Nilai rentang diperiksa server-side dan ditampilkan sebagai rentang pada detail respons/ekspor.
+- Dropdown publik dan pilihan nama bank memiliki kolom pencarian ringan tanpa dependency baru. Daftar jenis field di builder diringkas dan seluruh field tersedia lewat modal pencarian.
+- Konfirmasi publish, unpublish, hapus field, dan hapus halaman memakai modal bergaya Formora; tidak tersisa `wire:confirm` atau pemanggilan alert/confirm browser di antarmuka.
+- Unggahan publik memakai dropzone dengan drag-and-drop, pratinjau thumbnail, nama/ukuran file, penghapusan pilihan, dan umpan balik batas file. Validasi server dan penyimpanan privat tetap berlaku.
+- Tidak ada migration atau perubahan database.
+
+### Validasi batch
+
+- `php artisan test --compact tests/Unit/FormSchemaServiceTest.php tests/Feature/FormBuilderTest.php tests/Feature/PublicFormTest.php tests/Feature/SubmissionManagementTest.php` — lulus, 38 test / 172 assertion.
+- `composer run types:check --no-interaction` — lulus, PHPStan 0 error.
+- `vendor/bin/pint --test` pada file batch — lulus.
+- `npm run build` — lulus; peringatan opsional `fontaine` untuk fallback font.
+- `composer test --no-interaction` — 119 dari 123 test lulus. Empat kegagalan tetap berada pada `DashboardTest` dan `Settings/SecurityTest`, yang sebelumnya tercatat gagal dan tidak disentuh batch ini.
+- `git diff --check` — lulus.
+
 ## Hasil Tahap 0
 
 - Waktu audit: 18 November 2026 (Asia/Bangkok).
@@ -388,3 +410,17 @@ Status: implementasi selesai untuk kondisi satu aturan per field pada halaman ya
 - `npm run build` — lulus; peringatan opsional `fontaine` untuk fallback font (dijalankan selama batch sebelum perbaikan PHP-only).
 - `git diff --check` — lulus.
 - Tidak ada migration atau perubahan database.
+
+## Koreksi UI dropdown pencarian
+
+- Dropdown pencarian publik diubah dari input pencarian yang tampil berdampingan dengan native select menjadi satu kontrol bergaya Select2: tombol pilihan, menu pencarian yang terbuka saat diklik, dan opsi yang dapat dicari. Native select tetap menjadi nilai form tersembunyi untuk pengiriman jawaban.
+- Ditambahkan regression test markup/init untuk memastikan hanya satu kontrol terlihat.
+- Tidak ada migration atau perubahan database.
+
+## Perbaikan tampilan detail submission
+
+- Nilai pilihan `select`, `radio`, dan `checkbox` pada detail submission sekarang diterjemahkan ke label opsi dari snapshot versi form, bukan menampilkan nilai internal seperti `pilihan_1`. CSV tetap memakai representasi yang sudah ada.
+- Metadata unggahan baru menyimpan nama file asli yang sudah dibatasi ke basename. Detail submission menampilkan nama tersebut tanpa membuka path penyimpanan privat; submission lama tanpa metadata tetap menampilkan teks generik.
+- Regression test mencakup label opsi, nama file, dan tidak bocornya path privat.
+- Lampiran kini memiliki tautan unduh privat pada detail submission. Endpoint memeriksa workspace, izin `downloadSubmissions`, bahwa path berada dalam direktori submission yang tepat, dan mencatat audit event tanpa nama/path file. Role viewer tetap dapat melihat detail tetapi tidak dapat mengunduh.
+- Ekspor CSV memakai formatter yang sama untuk label pilihan dan nama lampiran, serta tetap memasking field sensitif dan mengecualikan path privat.

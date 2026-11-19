@@ -10,7 +10,7 @@ use Illuminate\Validation\Validator as LaravelValidator;
 class FormSchemaService
 {
     /** @var list<string> */
-    public const FIELD_TYPES = ['text', 'textarea', 'email', 'phone', 'number', 'date', 'select', 'radio', 'checkbox', 'file', ...SmartFieldRegistry::TYPES];
+    public const FIELD_TYPES = ['text', 'textarea', 'email', 'phone', 'number', 'date', 'select', 'radio', 'checkbox', 'file', 'rating', 'slider', ...SmartFieldRegistry::TYPES];
 
     /** @return array<string, mixed> */
     public function empty(): array
@@ -50,6 +50,7 @@ class FormSchemaService
             'text' => 'Teks singkat', 'textarea' => 'Paragraf', 'email' => 'Email',
             'phone' => 'Telepon', 'number' => 'Angka', 'date' => 'Tanggal',
             'select' => 'Pilihan', 'radio' => 'Pilihan tunggal', 'checkbox' => 'Kotak centang', 'file' => 'Unggah file',
+            'rating' => 'Rating bintang', 'slider' => 'Slider angka',
         ];
         $smartDefinition = app(SmartFieldRegistry::class)->definition($type);
         $nameBase = 'field_'.str_replace('-', '', Str::substr($id, 0, 8));
@@ -62,12 +63,16 @@ class FormSchemaService
             'required' => false,
             'help_text' => null,
             'default_value' => null,
-            'settings' => in_array($type, ['select', 'radio', 'checkbox'], true)
-                ? ['options' => [
+            'settings' => match (true) {
+                in_array($type, ['select', 'radio', 'checkbox'], true) => ['options' => [
                     ['label' => 'Pilihan 1', 'value' => 'pilihan_1'],
                     ['label' => 'Pilihan 2', 'value' => 'pilihan_2'],
-                ]]
-                : [],
+                ]],
+                $type === 'date' => ['mode' => 'date'],
+                $type === 'rating' => ['scale' => 5],
+                $type === 'slider' => ['min' => 0, 'max' => 100, 'step' => 1],
+                default => [],
+            },
             'validation' => [],
             'visibility' => null,
         ];
@@ -180,6 +185,25 @@ class FormSchemaService
                                 $validator->errors()->add("{$fieldPath}.settings.options.{$optionIndex}.value", 'Nilai pilihan harus unik.');
                             }
                             $values[$option['value']] = true;
+                        }
+                    } elseif ($type === 'date') {
+                        if (! is_array($settings) || array_diff(array_keys($settings), ['mode']) !== [] || ! in_array($settings['mode'] ?? 'date', ['date', 'time', 'datetime', 'date_range'], true)) {
+                            $validator->errors()->add("{$fieldPath}.settings", 'Pilih jenis tanggal, waktu, atau rentang yang tersedia.');
+                        }
+                    } elseif ($type === 'rating') {
+                        $scale = is_array($settings) ? ($settings['scale'] ?? null) : null;
+                        if (! is_array($settings) || array_keys($settings) !== ['scale'] || ! is_numeric($scale) || (float) (int) $scale !== (float) $scale || (int) $scale < 3 || (int) $scale > 10) {
+                            $validator->errors()->add("{$fieldPath}.settings", 'Skala rating harus antara 3 dan 10 bintang.');
+                        }
+                    } elseif ($type === 'slider') {
+                        $minimum = is_array($settings) ? ($settings['min'] ?? null) : null;
+                        $maximum = is_array($settings) ? ($settings['max'] ?? null) : null;
+                        $step = is_array($settings) ? ($settings['step'] ?? null) : null;
+                        $intervals = is_numeric($minimum) && is_numeric($maximum) && is_numeric($step) && (float) $step > 0
+                            ? ((float) $maximum - (float) $minimum) / (float) $step
+                            : 0;
+                        if (! is_array($settings) || array_diff(array_keys($settings), ['min', 'max', 'step']) !== [] || ! is_numeric($minimum) || ! is_numeric($maximum) || ! is_numeric($step) || (float) $minimum >= (float) $maximum || (float) $step <= 0 || abs((float) $minimum) > 1000000 || abs((float) $maximum) > 1000000 || $intervals > 100000 || abs($intervals - round($intervals)) > 0.000001) {
+                            $validator->errors()->add("{$fieldPath}.settings", 'Rentang slider tidak valid. Atur batas minimum, maksimum, dan langkah angka.');
                         }
                     } elseif ($settings !== []) {
                         $validator->errors()->add("{$fieldPath}.settings", 'Pengaturan ini tidak berlaku untuk jenis field tersebut.');

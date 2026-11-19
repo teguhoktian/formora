@@ -61,19 +61,18 @@ class GenerateSubmissionExport implements ShouldQueue
 
             $query->chunkById(200, function ($submissions) use ($stream, $presenter, $columns, $fieldIndexes): void {
                 foreach ($submissions as $submission) {
-                    $fields = $presenter->fields($submission->formVersion->schema);
+                    $formattedAnswers = $presenter->exportValues($submission);
                     $row = [
                         $submission->reference_number,
                         $submission->status,
                         $submission->created_at?->toIso8601String(),
                         ...array_fill(0, count($columns), ''),
                     ];
-                    foreach ($submission->response_data as $name => $value) {
+                    foreach ($formattedAnswers as $name => $value) {
                         if (! isset($fieldIndexes[$name])) {
                             continue;
                         }
-                        $label = $fields[$name]['label'] ?? $columns[$name];
-                        $row[$fieldIndexes[$name] + 3] = $presenter->mask((string) $name, $label, $value, $fields[$name]['type'] ?? null);
+                        $row[$fieldIndexes[$name] + 3] = $value;
                     }
                     fputcsv($stream, array_map($this->safeCsvCell(...), $row));
                 }
