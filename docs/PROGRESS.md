@@ -303,3 +303,27 @@ sebelum pekerjaan backlog pasca-MVP.
 - `git diff --check` — lulus.
 
 **Berhenti setelah tahap 11.**
+
+## Penyempurnaan fitur pasca-MVP — batch Smart Fields dan Analitik
+
+Status: batch ini selesai; menunggu persetujuan sebelum batch fitur berikutnya.
+
+- Menambahkan halaman katalog Smart Fields dari registry yang sudah ada. Halaman menampilkan field yang didukung, metadata, penanda data sensitif, dan keterangan bahwa pemeriksaan format bukan verifikasi identitas resmi.
+- Menambahkan halaman Analitik berbasis agregat workspace aktif: jumlah form, form terbit, submission total dan 30 hari terakhir, ringkasan status, tren enam bulan, serta form dengan respons terbanyak. Query tidak mengambil isi jawaban submission.
+- Mengganti stub sidebar Smart Fields dan Analitik dengan tautan aktif.
+- Pilihan pengguna untuk fitur Logika builder: tampilkan/sembunyikan field secara kondisional. Fitur ini belum dikerjakan dan membutuhkan desain schema serta validasi renderer.
+
+### Validasi batch
+
+- `php artisan test --compact tests/Feature/WorkspaceFeaturePagesTest.php` — lulus, 3 test / 16 assertion.
+- `composer run types:check --no-interaction` — lulus, PHPStan 0 error.
+- `npm run build` — lulus; ada peringatan opsional `fontaine` untuk fallback font.
+- `vendor/bin/pint --test app/Http/Controllers/AnalyticsController.php app/Http/Controllers/SmartFieldsController.php routes/web.php tests/Feature/WorkspaceFeaturePagesTest.php` — lulus.
+- `git diff --check` — lulus.
+- `composer test --no-interaction` — belum lulus: 104 dari 108 test lulus; 4 gagal. Kegagalan yang terlihat berada pada assertion dashboard dan pengaturan keamanan; area tersebut tidak disentuh batch ini. Perlu triase tersendiri sebelum menjadikan suite penuh sebagai gerbang.
+
+### Backlog fitur berikutnya
+
+- Fitur Logika builder untuk menampilkan/menyembunyikan field berdasarkan jawaban field lain; perlu schema, validasi server-side, renderer publik, builder UI, dan tes.
+- Tab Design builder masih belum berfungsi.
+- Pencarian pada header starter merupakan view/layout yang tidak dipakai oleh halaman aktif; belum diputuskan apakah akan diaktifkan sebagai pencarian produk.

@@ -48,9 +48,13 @@
                         Workspace
                     </flux:sidebar.item>
                 </flux:sidebar.group>
-                <flux:sidebar.group heading="Akan hadir" class="mt-5 grid" aria-label="Fitur yang sedang disiapkan">
-                    <div class="flex items-center justify-between px-3 py-2 text-sm text-slate-600"><span>Smart Fields</span><span class="rounded bg-slate-100 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-slate-600">Segera</span></div>
-                    <div class="flex items-center justify-between px-3 py-2 text-sm text-slate-600"><span>Analitik</span><span class="rounded bg-slate-100 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-slate-600">Segera</span></div>
+                <flux:sidebar.group heading="Fitur" class="mt-5 grid">
+                    <flux:sidebar.item icon="rectangle-stack" :href="route('smart-fields.index')" :current="request()->routeIs('smart-fields.*')" wire:navigate>
+                        Smart Fields
+                    </flux:sidebar.item>
+                    <flux:sidebar.item icon="chart-bar" :href="route('analytics.index')" :current="request()->routeIs('analytics.*')" wire:navigate>
+                        Analitik
+                    </flux:sidebar.item>
                 </flux:sidebar.group>
             </flux:sidebar.nav>
 

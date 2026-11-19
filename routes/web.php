@@ -1,8 +1,10 @@
 <?php
 
+use App\Http\Controllers\AnalyticsController;
 use App\Http\Controllers\FormController;
 use App\Http\Controllers\FormTemplateController;
 use App\Http\Controllers\PublicFormController;
+use App\Http\Controllers\SmartFieldsController;
 use App\Http\Controllers\SubmissionController;
 use App\Http\Controllers\WorkspaceController;
 use Illuminate\Support\Facades\Route;
@@ -29,6 +31,8 @@ Route::get('smart-fields/regions/{districtCode}/villages', [PublicFormController
 
 Route::middleware(['auth', 'verified'])->group(function () {
     Route::view('dashboard', 'dashboard')->name('dashboard');
+    Route::get('smart-fields', SmartFieldsController::class)->name('smart-fields.index');
+    Route::get('analytics', AnalyticsController::class)->name('analytics.index');
 
     Route::get('forms', [FormController::class, 'index'])->name('forms.index');
     Route::post('forms', [FormController::class, 'store'])->name('forms.store');
