@@ -17,3 +17,18 @@
 12. Do not run destructive database or Git commands.
 13. Keep responses concise; inspect only relevant files and avoid repeating
     repository context.
+
+## Efficient AI Agent Workflow
+
+1. Read `AGENTS.md`, `docs/PROGRESS.md`, and only the relevant sections of `docs/IMPLEMENTATION_PLAN.md` before working.
+2. Do not repeatedly read entire documentation files when the relevant context is already available.
+3. Inspect only files directly related to the current task.
+4. Do not repeat audits or checks that have already passed unless changes could invalidate their results.
+5. Work in small, logically grouped batches to minimize unnecessary tool calls and token usage.
+6. Prefer concise command output. Avoid printing entire files, database contents, or verbose logs.
+7. Do not create additional planning documents unless they provide lasting operational value.
+8. Reuse existing scripts, documentation, and test results where valid.
+9. Report only: actions performed, results, failures, risks, and decisions required.
+10. Never skip security checks, backups, tests, or approval gates merely to save tokens.
+11. Never make destructive changes without explicit authorization.
+12. Update `docs/PROGRESS.md` once per completed batch, not after every minor action.
