@@ -47,6 +47,8 @@ class SmartFieldTest extends TestCase
         $this->get(route('public.forms.show', $form->slug))
             ->assertOk()
             ->assertSee('Nomor rekening bank')
+            ->assertSee('Pilih nama bank')
+            ->assertSee('PT BANK CENTRAL ASIA Tbk')
             ->assertSee('Pilih provinsi')
             ->assertSee('data-address-region="regency" disabled', false)
             ->assertSee('data-address-region="district" disabled', false)
@@ -85,6 +87,7 @@ class SmartFieldTest extends TestCase
             'npwp' => 'abc',
             'lahir' => now()->addDay()->toDateString(),
             'rekening' => '12-AB',
+            'bank' => 'Bank Contoh',
             'rupiah' => '-1',
             'telepon' => '021123456',
             'nip' => '123',
@@ -187,7 +190,7 @@ class SmartFieldTest extends TestCase
             'npwp' => '12.345.678.9-012.345',
             'lahir' => '1990-01-02',
             'rekening' => '1234-5678',
-            'bank' => 'Bank Contoh',
+            'bank' => 'PT BANK CENTRAL ASIA Tbk',
             'rupiah' => '1250000',
             'telepon' => '+62 812-3456-7890',
             'alamat' => ['province' => '32', 'regency' => '32.04', 'district' => '32.04.05', 'village' => '32.04.05.2001'],

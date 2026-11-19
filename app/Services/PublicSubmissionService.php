@@ -108,7 +108,9 @@ class PublicSubmissionService
                 default:
                     $definition = app(SmartFieldRegistry::class)->definition($field['type']);
                     if ($definition !== null) {
-                        $rules[$key] = [$presentRule, ...$definition['rules']];
+                        $rules[$key] = $field['type'] === 'smart_bank_name'
+                            ? [$presentRule, ...$definition['rules'], Rule::in($definition['options'] ?? [])]
+                            : [$presentRule, ...$definition['rules']];
                     }
                     break;
             }

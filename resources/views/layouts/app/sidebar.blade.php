@@ -4,7 +4,7 @@
         @include('partials.head')
     </head>
     <body class="min-h-screen bg-[#f7f8fa] text-slate-900 antialiased">
-        <flux:sidebar sticky collapsible="mobile" class="border-e border-slate-200/80 bg-white shadow-[4px_0_24px_-20px_rgba(15,23,42,0.2)]">
+        <flux:sidebar sticky collapsible="mobile" class="formora-scrollbar border-e border-slate-200/80 bg-white shadow-[4px_0_24px_-20px_rgba(15,23,42,0.2)]">
             <flux:sidebar.header>
                 <x-app-logo :sidebar="true" href="{{ route('dashboard') }}" wire:navigate />
                 <flux:sidebar.collapse class="lg:hidden" />

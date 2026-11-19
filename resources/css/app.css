@@ -47,6 +47,37 @@
     }
 }
 
+[data-flux-sidebar].formora-scrollbar {
+    scrollbar-gutter: stable;
+    scrollbar-width: thin;
+    scrollbar-color: transparent transparent;
+}
+
+[data-flux-sidebar].formora-scrollbar:hover,
+[data-flux-sidebar].formora-scrollbar:focus-within {
+    scrollbar-color: #94a3b8 transparent;
+}
+
+[data-flux-sidebar].formora-scrollbar::-webkit-scrollbar {
+    width: 8px;
+}
+
+[data-flux-sidebar].formora-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+[data-flux-sidebar].formora-scrollbar::-webkit-scrollbar-thumb {
+    border: 2px solid transparent;
+    border-radius: 9999px;
+    background: transparent;
+    background-clip: padding-box;
+}
+
+[data-flux-sidebar].formora-scrollbar:hover::-webkit-scrollbar-thumb,
+[data-flux-sidebar].formora-scrollbar:focus-within::-webkit-scrollbar-thumb {
+    background-color: #94a3b8;
+}
+
 [data-flux-field]:not(ui-radio, ui-checkbox) {
     @apply grid gap-2;
 }

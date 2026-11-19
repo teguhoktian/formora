@@ -6,6 +6,19 @@ Tahap 11 — Hardening MVP selesai; menunggu persetujuan sebelum pekerjaan
 backlog pasca-MVP. Backup/restore rehearsal pada target disposable deployment
 tetap menjadi langkah operasional sebelum peluncuran.
 
+Penyempurnaan yang diminta setelah Tahap 11: scrollbar sidebar dibuat konsisten
+lebarnya dan hanya menampilkan thumb saat hover/fokus; Smart Field nama bank
+menggunakan daftar bank umum OJK Juni 2026 dan validasi server. Tahap lanjutan
+pasca-MVP belum didefinisikan dalam rencana dan tetap dikerjakan berurutan setelah
+ruang lingkup tahap berikutnya disepakati.
+
+Validasi penyempurnaan:
+- `php artisan test --compact tests/Feature/SmartFieldTest.php` — lulus, 5 test / 58 assertion.
+- `vendor/bin/pint --test app/Services/SmartFieldRegistry.php app/Services/PublicSubmissionService.php tests/Feature/SmartFieldTest.php` — lulus.
+- `composer run types:check --no-interaction` — lulus, PHPStan 0 error.
+- `npm run build` — lulus; ada peringatan opsional `fontaine` untuk fallback font.
+- `git diff --check` — lulus.
+
 ## Hasil Tahap 0
 
 - Waktu audit: 18 November 2026 (Asia/Bangkok).

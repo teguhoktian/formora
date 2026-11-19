@@ -11,7 +11,7 @@ memeriksa pola masukan; Formora tidak memverifikasi identitas ke instansi.
 | NPWP | 15 atau 16 angka | Tanda titik, strip, dan spasi dihapus; dimasking |
 | Tanggal lahir | Tanggal `YYYY-MM-DD`, tidak di masa depan | Dimasking |
 | Nomor rekening | 6–30 angka setelah tanda pemisah dihapus | Batas input Formora, bukan aturan antarbank; dimasking |
-| Nama bank | Teks maksimal 120 karakter | Isian teks, tanpa daftar bank eksternal |
+| Nama bank | Salah satu nama bank umum dalam snapshot OJK | Pilihan dropdown dan divalidasi kembali di server |
 | Nominal Rupiah | Angka non-negatif | Disajikan dengan pemisah ribuan Rupiah |
 | Telepon Indonesia | Pola `^(?:\\+62|62|0)8[0-9]{7,12}$` setelah normalisasi | Spasi, kurung, titik, dan strip dinormalisasi; format tidak memverifikasi operator atau alokasi nomor |
 | Alamat bertingkat | Pilih provinsi → kabupaten/kota → kecamatan → desa/kelurahan | Tiap pilihan mengikuti wilayah induknya; semua tingkat disimpan sebagai kode dan diperiksa ulang di server |
@@ -20,7 +20,14 @@ memeriksa pola masukan; Formora tidak memverifikasi identitas ke instansi.
 | NUPTK | 16 angka | Dimasking |
 | NIM | Teks maksimal 50 karakter | Dimasking; format institusi berbeda-beda |
 
-Daftar bank tetap berupa teks bebas. Data wilayah provinsi, kabupaten/kota,
+Nama bank menggunakan snapshot lokal daftar kantor pusat Bank Umum Konvensional
+dan Bank Umum Syariah yang diterbitkan OJK pada Juni 2026. Snapshot mencakup
+bank umum nasional, BPD, dan kantor cabang bank luar negeri; BPR/BPRS tidak
+termasuk dalam daftar tersebut. Daftar ada di `SmartFieldRegistry::BANK_NAMES`
+dan perlu ditinjau saat OJK menerbitkan pembaruan. Sumber: [Daftar Alamat Kantor
+Pusat Bank Umum dan Syariah — OJK](https://ojk.go.id/id/kanal/perbankan/data-dan-statistik/Pages/Daftar-Alamat-Kantor-Pusat-Bank-Umum-Dan-Syariah.aspx).
+
+Data wilayah provinsi, kabupaten/kota,
 kecamatan, dan desa/kelurahan disimpan sebagai snapshot lokal di `resources/data/`;
 form tidak menghubungi layanan eksternal saat diisi. Snapshot berisi 38 provinsi,
 514 kabupaten/kota, 7.285 kecamatan, dan 83.762 desa/kelurahan. Perbarui dengan
