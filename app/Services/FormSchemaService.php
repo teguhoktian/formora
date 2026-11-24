@@ -10,7 +10,7 @@ use Illuminate\Validation\Validator as LaravelValidator;
 class FormSchemaService
 {
     /** @var list<string> */
-    public const FIELD_TYPES = ['text', 'textarea', 'email', 'phone', 'number', 'date', 'select', 'radio', 'checkbox', 'file', 'rating', 'slider', ...SmartFieldRegistry::TYPES];
+    public const FIELD_TYPES = ['text', 'textarea', 'email', 'phone', 'number', 'date', 'select', 'radio', 'checkbox', 'file', 'rating', 'slider', 'signature', ...SmartFieldRegistry::TYPES];
 
     /** @return array<string, mixed> */
     public function empty(): array
@@ -50,7 +50,7 @@ class FormSchemaService
             'text' => 'Teks singkat', 'textarea' => 'Paragraf', 'email' => 'Email',
             'phone' => 'Telepon', 'number' => 'Angka', 'date' => 'Tanggal',
             'select' => 'Pilihan', 'radio' => 'Pilihan tunggal', 'checkbox' => 'Kotak centang', 'file' => 'Unggah file',
-            'rating' => 'Rating bintang', 'slider' => 'Slider angka',
+            'rating' => 'Rating bintang', 'slider' => 'Slider angka', 'signature' => 'Tanda tangan',
         ];
         $smartDefinition = app(SmartFieldRegistry::class)->definition($type);
         $nameBase = 'field_'.str_replace('-', '', Str::substr($id, 0, 8));

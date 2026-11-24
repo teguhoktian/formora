@@ -162,6 +162,9 @@ class PublicSubmissionService
                         $rules[$key] = [$presentRule, 'file', 'mimes:'.implode(',', $extensions), 'max:'.$maxSize];
                     }
                     break;
+                case 'signature':
+                    $rules[$key] = [$presentRule, 'string', 'max:1400000'];
+                    break;
                 case 'smart_address':
                     $regions = app(IndonesiaRegionCatalog::class);
                     $parts = ['province' => 'Provinsi', 'regency' => 'Kabupaten/Kota', 'district' => 'Kecamatan', 'village' => 'Desa/Kelurahan'];
@@ -248,6 +251,15 @@ class PublicSubmissionService
                     : null;
                 $fail = fn (string $message) => $validator->errors()->add($errorKey, $custom ?? $message);
 
+                if ($field['type'] === 'signature' && is_string($value)) {
+                    $bytes = $this->decodeSignature($value);
+                    if ($bytes === null || $totalBytes + strlen($bytes) > 25 * 1024 * 1024) {
+                        $fail('Tanda tangan tidak valid. Silakan gambar ulang.');
+                    } else {
+                        $totalBytes += strlen($bytes);
+                    }
+                }
+
                 if (in_array($field['type'], ['text', 'textarea'], true) && is_string($value)) {
                     $length = mb_strlen($value);
                     if (isset($validation['min_length']) && $length < (int) $validation['min_length']) {
@@ -320,9 +332,32 @@ class PublicSubmissionService
         $reference = 'FM-'.Str::upper((string) Str::ulid());
         $answers = $validated['answers'] ?? [];
         $storedPaths = [];
+        $fieldTypes = [];
+        foreach ($version->schema['pages'] ?? [] as $page) {
+            foreach ($page['fields'] ?? [] as $field) {
+                if (is_string($field['name'] ?? null) && is_string($field['type'] ?? null)) {
+                    $fieldTypes[$field['name']] = $field['type'];
+                }
+            }
+        }
 
         try {
             foreach ($answers as $name => $answer) {
+                if (($fieldTypes[$name] ?? null) === 'signature') {
+                    $bytes = is_string($answer) ? $this->decodeSignature($answer) : null;
+                    if ($bytes === null) {
+                        throw new \RuntimeException('Signature image payload failed validation.');
+                    }
+                    $path = 'form-submissions/'.$form->id.'/'.$reference.'/signature.png';
+                    if (! Storage::disk('local')->put($path, $bytes)) {
+                        throw new \RuntimeException('Private signature storage failed.');
+                    }
+                    $storedPaths[] = $path;
+                    $answers[$name] = ['private_path' => $path, 'original_name' => 'Tanda tangan.png'];
+
+                    continue;
+                }
+
                 $files = is_array($answer) ? $answer : [$answer];
                 $storedFiles = [];
                 foreach ($files as $file) {
@@ -356,5 +391,26 @@ class PublicSubmissionService
 
             throw $exception;
         }
+    }
+
+    private function decodeSignature(string $dataUrl): ?string
+    {
+        $prefix = 'data:image/png;base64,';
+        if (! str_starts_with($dataUrl, $prefix)) {
+            return null;
+        }
+
+        $bytes = base64_decode(substr($dataUrl, strlen($prefix)), true);
+        if (! is_string($bytes) || $bytes === '' || strlen($bytes) > 1024 * 1024) {
+            return null;
+        }
+
+        $image = @getimagesizefromstring($bytes);
+
+        if (! is_array($image) || $image['mime'] !== 'image/png' || $image[0] > 3000 || $image[1] > 3000 || $image[0] * $image[1] > 2_000_000) {
+            return null;
+        }
+
+        return $bytes;
     }
 }

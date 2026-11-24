@@ -57,7 +57,7 @@ class SubmissionResponsePresenter
         $fields = $this->fields($submission->formVersion->schema);
         $attachments = [];
         foreach ($submission->response_data as $name => $value) {
-            if (($fields[$name]['type'] ?? null) !== 'file') {
+            if (! in_array($fields[$name]['type'] ?? null, ['file', 'signature'], true)) {
                 continue;
             }
             $files = is_array($value) && array_is_list($value) ? $value : [$value];

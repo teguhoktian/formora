@@ -28,7 +28,7 @@
             </div>
 
             @if ($referenceNumber)
-                <div class="px-6 py-12 text-center sm:px-10">
+                    <div class="px-6 py-12 text-center sm:px-10">
                     <span class="mx-auto grid size-12 place-items-center rounded-full {{ $publicAccent['soft'] }} text-2xl {{ $publicAccent['text'] }}" aria-hidden="true">✓</span>
                     <h2 class="mt-4 text-xl font-semibold text-slate-950">{{ $schema['settings']['success_message'] }}</h2>
                     <p class="mt-3 text-sm text-slate-600">Nomor referensi Anda</p>
@@ -36,14 +36,14 @@
                     <p class="mt-3 text-xs text-slate-400">Simpan nomor ini untuk referensi Anda.</p>
                 </div>
             @else
-                @if ($errors->any())
-                    <div class="mx-6 mt-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 sm:mx-10" role="alert">
-                        <p class="font-semibold">Periksa isian yang ditandai lalu kirim kembali.</p>
+                <div data-submit-errors @if (! $errors->any()) hidden @endif class="mx-6 mt-6 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800 sm:mx-10" role="alert" aria-live="assertive">
+                        <p data-submit-error-title class="font-semibold">Periksa isian yang ditandai lalu kirim kembali.</p>
+                        <div data-submit-error-list>
                         @foreach ($errors->all() as $error)
                             <p class="mt-1">{{ $error }}</p>
                         @endforeach
-                    </div>
-                @endif
+                        </div>
+                </div>
 
                 <form method="POST" action="{{ route('public.forms.submit', $form->slug) }}" enctype="multipart/form-data" data-public-stepper>
                     @csrf
@@ -68,7 +68,7 @@
                                     @php($fieldName = 'answers['.$field['name'].']')
                                     @php($fieldValidation = $field['validation'] ?? [])
                                     <div class="space-y-2" data-field-id="{{ $field['id'] }}" data-field-name="{{ $field['name'] }}" @if (is_array($field['visibility'] ?? null)) data-visibility-source="{{ $field['visibility']['field_id'] }}" data-visibility-value="{{ $field['visibility']['value'] }}" @endif>
-                                        <label @if (!in_array($field['type'], ['radio', 'checkbox', 'smart_address'], true) && !($field['type'] === 'date' && ($field['settings']['mode'] ?? 'date') === 'date_range')) for="field-{{ $field['id'] }}" @endif class="block text-sm font-semibold text-slate-800">
+                                        <label @if (!in_array($field['type'], ['radio', 'checkbox', 'smart_address', 'signature'], true) && !($field['type'] === 'date' && ($field['settings']['mode'] ?? 'date') === 'date_range')) for="field-{{ $field['id'] }}" @endif class="block text-sm font-semibold text-slate-800">
                                             {{ $field['label'] }}@if ($field['required']) <span class="text-red-600" aria-label="wajib diisi">*</span>@endif
                                         </label>
                                         @if ($field['type'] === 'date' && ($field['settings']['mode'] ?? 'date') === 'date_range')
@@ -95,6 +95,12 @@
                                                         <span>{{ $option['label'] }}</span>
                                                     </label>
                                                 @endforeach
+                                            </div>
+                                        @elseif ($field['type'] === 'signature')
+                                            <div data-signature-pad class="space-y-2">
+                                                <div class="overflow-hidden rounded-xl border border-slate-300 bg-white"><canvas data-signature-canvas width="900" height="240" aria-label="Area untuk menggambar tanda tangan" class="block h-40 w-full touch-none cursor-crosshair"></canvas></div>
+                                                <input type="hidden" name="{{ $fieldName }}" data-signature-value>
+                                                <div class="flex items-center justify-between gap-3"><p class="text-xs text-slate-500">Gambar tanda tangan dengan jari, mouse, atau stylus.</p><button type="button" data-signature-clear class="rounded-lg border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 hover:bg-slate-50">Hapus</button></div>
                                             </div>
                                         @elseif ($field['type'] === 'file')
                                             @php($allowedFileTypes = $fieldValidation['allowed_types'] ?? ['pdf', 'jpg', 'jpeg', 'png', 'doc', 'docx'])
@@ -170,6 +176,13 @@
                         </section>
                     @endforeach
                 </form>
+                <div data-submit-success hidden class="px-6 py-12 text-center sm:px-10">
+                    <span class="mx-auto grid size-12 place-items-center rounded-full {{ $publicAccent['soft'] }} text-2xl {{ $publicAccent['text'] }}" aria-hidden="true">✓</span>
+                    <h2 data-success-message class="mt-4 text-xl font-semibold text-slate-950"></h2>
+                    <p class="mt-3 text-sm text-slate-600">Nomor referensi Anda</p>
+                    <p data-success-reference class="mt-1 font-mono text-lg font-semibold tracking-wide {{ $publicAccent['text'] }}"></p>
+                    <p class="mt-3 text-xs text-slate-400">Simpan nomor ini untuk referensi Anda.</p>
+                </div>
             @endif
         </section>
         <p class="mt-5 text-center text-xs text-slate-500">Baca <a href="{{ route('privacy') }}" class="underline underline-offset-2">pemberitahuan privasi Formora</a>. Untuk tujuan dan penggunaan jawaban, hubungi pengelola formulir.</p>
@@ -272,6 +285,48 @@
             slider.addEventListener('input', () => { if (output) output.value = slider.value; });
         });
 
+        document.querySelectorAll('[data-signature-pad]').forEach((pad) => {
+            const canvas = pad.querySelector('[data-signature-canvas]');
+            const value = pad.querySelector('[data-signature-value]');
+            const context = canvas.getContext('2d');
+            let drawing = false;
+            let hasStroke = false;
+            context.strokeStyle = '#0f172a';
+            context.lineWidth = 4;
+            context.lineCap = 'round';
+            context.lineJoin = 'round';
+            const point = (event) => {
+                const bounds = canvas.getBoundingClientRect();
+                return { x: (event.clientX - bounds.left) * canvas.width / bounds.width, y: (event.clientY - bounds.top) * canvas.height / bounds.height };
+            };
+            canvas.addEventListener('pointerdown', (event) => {
+                event.preventDefault();
+                drawing = true;
+                hasStroke = true;
+                canvas.setPointerCapture(event.pointerId);
+                const current = point(event);
+                context.beginPath();
+                context.moveTo(current.x, current.y);
+                context.lineTo(current.x + 0.1, current.y + 0.1);
+                context.stroke();
+            });
+            canvas.addEventListener('pointermove', (event) => {
+                if (!drawing) return;
+                const current = point(event);
+                context.lineTo(current.x, current.y);
+                context.stroke();
+                value.value = canvas.toDataURL('image/png');
+            });
+            const stopDrawing = () => { drawing = false; if (hasStroke) value.value = canvas.toDataURL('image/png'); };
+            canvas.addEventListener('pointerup', stopDrawing);
+            canvas.addEventListener('pointercancel', stopDrawing);
+            pad.querySelector('[data-signature-clear]').addEventListener('click', () => {
+                context.clearRect(0, 0, canvas.width, canvas.height);
+                value.value = '';
+                hasStroke = false;
+            });
+        });
+
         document.querySelectorAll('[data-file-manager]').forEach((manager) => {
             const input = manager.querySelector('[data-file-input]');
             const dropzone = manager.querySelector('[data-file-dropzone]');
@@ -348,6 +403,7 @@
         });
 
         document.querySelectorAll('[data-public-stepper]').forEach((form) => {
+            form.noValidate = true;
             const pages = Array.from(form.querySelectorAll('[data-public-page]'));
             const pageInput = form.querySelector('[data-current-page]');
             let current = Math.min(Number(pageInput.value) || 0, pages.length - 1);
@@ -376,6 +432,7 @@
                     });
 
                     if (!isVisible && wasVisible) {
+                        field.querySelector('[data-signature-clear]')?.click();
                         controls.forEach((control) => {
                             if (control.type === 'checkbox' || control.type === 'radio') control.checked = false;
                             else if (control.type === 'file') { control.value = ''; control.dispatchEvent(new Event('change', { bubbles: true })); }
@@ -399,6 +456,73 @@
             });
             form.addEventListener('change', updateVisibility);
             form.addEventListener('input', updateVisibility);
+            form.addEventListener('submit', async (event) => {
+                event.preventDefault();
+                const submitButton = form.querySelector('button[type="submit"]');
+                const originalLabel = submitButton.textContent;
+                const alert = form.parentElement.querySelector('[data-submit-errors]');
+                const errorList = alert.querySelector('[data-submit-error-list]');
+                form.querySelectorAll('[data-async-field-error]').forEach((element) => element.remove());
+                form.querySelectorAll('[aria-invalid="true"]').forEach((control) => control.removeAttribute('aria-invalid'));
+                alert.hidden = true;
+                submitButton.disabled = true;
+                submitButton.textContent = 'Mengirim…';
+                try {
+                    const response = await fetch(form.action, {
+                        method: 'POST',
+                        body: new FormData(form),
+                        headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                    });
+                    const result = await response.json();
+                    if (response.status === 422 && result.errors) {
+                        const messages = [];
+                        Object.entries(result.errors).forEach(([key, fieldMessages]) => {
+                            fieldMessages.forEach((message) => {
+                                messages.push(message);
+                                const match = key.match(/^answers\.([a-z][a-z0-9_]*)(?:\.|$)/);
+                                const field = match && fields.find((candidate) => candidate.dataset.fieldName === match[1]);
+                                if (field) {
+                                    const error = document.createElement('p');
+                                    error.dataset.asyncFieldError = '';
+                                    error.className = 'mt-1 text-xs font-medium text-red-700';
+                                    error.textContent = message;
+                                    field.append(error);
+                                    field.querySelectorAll('input, select, textarea, canvas').forEach((control) => control.setAttribute('aria-invalid', 'true'));
+                                }
+                            });
+                        });
+                        errorList.replaceChildren(...messages.map((message) => {
+                            const line = document.createElement('p');
+                            line.className = 'mt-1';
+                            line.textContent = message;
+                            return line;
+                        }));
+                        alert.hidden = false;
+                        showPage(Number(result.failed_page) || 0);
+                        alert.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        return;
+                    }
+                    if (!response.ok) throw new Error('Pengiriman belum berhasil. Periksa koneksi lalu coba lagi.');
+                    form.hidden = true;
+                    const success = form.nextElementSibling;
+                    success.hidden = false;
+                    success.querySelector('[data-success-message]').textContent = result.message;
+                    success.querySelector('[data-success-reference]').textContent = result.reference_number;
+                    success.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                } catch (error) {
+                    errorList.replaceChildren();
+                    const line = document.createElement('p');
+                    line.className = 'mt-1';
+                    line.textContent = error instanceof Error ? error.message : 'Pengiriman belum berhasil. Coba lagi.';
+                    errorList.append(line);
+                    alert.hidden = false;
+                } finally {
+                    if (!form.hidden) {
+                        submitButton.disabled = false;
+                        submitButton.textContent = originalLabel;
+                    }
+                }
+            });
             updateVisibility();
             showPage(current);
         });

@@ -237,6 +237,49 @@ class PublicFormTest extends TestCase
         $this->assertSame(1, $form->submissions()->count());
     }
 
+    public function test_async_submission_keeps_validation_errors_structured_and_stores_signature_privately(): void
+    {
+        Storage::fake('local');
+        [$form] = $this->makePublishedForm([
+            ['type' => 'text', 'name' => 'name', 'label' => 'Nama', 'required' => true],
+            ['type' => 'file', 'name' => 'photo', 'label' => 'Foto', 'required' => false],
+            ['type' => 'signature', 'name' => 'signature', 'label' => 'Tanda tangan', 'required' => true],
+        ]);
+        $signature = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j78sAAAAASUVORK5CYII=';
+
+        $this->get(route('public.forms.show', $form->slug))
+            ->assertOk()
+            ->assertSee('data-signature-pad', false)
+            ->assertSee("form.addEventListener('submit', async", false)
+            ->assertSee('body: new FormData(form)', false);
+
+        $this->withHeader('Accept', 'application/json')->post(route('public.forms.submit', $form->slug), [
+            'answers' => [
+                'photo' => UploadedFile::fake()->image('photo.png'),
+                'signature' => $signature,
+            ],
+        ])->assertUnprocessable()
+            ->assertJsonPath('failed_page', 0)
+            ->assertJsonValidationErrors('answers.name');
+        $this->assertSame(0, $form->submissions()->count());
+
+        $response = $this->withHeader('Accept', 'application/json')->post(route('public.forms.submit', $form->slug), [
+            'answers' => [
+                'name' => 'Dewi',
+                'photo' => UploadedFile::fake()->image('photo.png'),
+                'signature' => $signature,
+            ],
+        ]);
+
+        $response->assertCreated()->assertJsonPath('message', 'Terima kasih, data berhasil dikirim.');
+        $submission = $form->submissions()->firstOrFail();
+        $signaturePath = $submission->response_data['signature']['private_path'];
+        $this->assertSame('Tanda tangan.png', $submission->response_data['signature']['original_name']);
+        $this->assertStringStartsWith('form-submissions/'.$form->id.'/', $signaturePath);
+        Storage::disk('local')->assertExists($signaturePath);
+        $this->assertStringNotContainsString('data:image/png;base64', json_encode($submission->response_data, JSON_THROW_ON_ERROR));
+    }
+
     public function test_configured_text_and_number_rules_are_checked_on_the_server(): void
     {
         [$textForm] = $this->makePublishedForm([

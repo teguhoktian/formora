@@ -49,13 +49,17 @@ class PublicFormController extends Controller
         return response()->json(['data' => $regions->villages($districtCode)]);
     }
 
-    public function submit(Request $request, string $slug, PublicSubmissionService $submissions, FormSchemaService $schemas): RedirectResponse
+    public function submit(Request $request, string $slug, PublicSubmissionService $submissions, FormSchemaService $schemas): JsonResponse|RedirectResponse
     {
         [$form, $version] = $this->publishedForm($slug);
         $pageCount = max(1, count($version->schema['pages'] ?? []));
         $page = max(0, min($request->integer('current_page'), $pageCount - 1));
 
         if ($request->filled('website')) {
+            if ($request->expectsJson()) {
+                return response()->json(['errors' => ['form' => ['Pengiriman tidak dapat diproses.']], 'failed_page' => $page], 422);
+            }
+
             return back()->withErrors(['form' => 'Pengiriman tidak dapat diproses.'])->with('failed_page', $page);
         }
 
@@ -84,10 +88,21 @@ class PublicFormController extends Controller
                 }
             }
 
+            if ($request->expectsJson()) {
+                return response()->json(['errors' => $exception->errors(), 'failed_page' => $page], 422);
+            }
+
             return back()->withErrors($exception->errors())->with('failed_page', $page);
         }
 
         $submission = $submissions->store($form, $version, $validated);
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'reference_number' => $submission->reference_number,
+                'message' => $version->schema['settings']['success_message'] ?? 'Terima kasih, jawaban Anda berhasil dikirim.',
+            ], 201);
+        }
 
         return to_route('public.forms.show', $form->slug)
             ->with('submission_reference', $submission->reference_number);

@@ -88,7 +88,16 @@ class SubmissionController extends Controller
     {
         $form = $this->authorizedForm($request, $form, $currentWorkspace);
         Gate::authorize('downloadSubmissions', $form);
-        $submission = $form->submissions()->whereKey($submission->id)->firstOrFail();
+        $submission = $form->submissions()->with('formVersion:id,schema')->whereKey($submission->id)->firstOrFail();
+        $fieldTypes = [];
+        foreach ($submission->formVersion->schema['pages'] ?? [] as $page) {
+            foreach ($page['fields'] ?? [] as $field) {
+                if (is_string($field['name'] ?? null) && is_string($field['type'] ?? null)) {
+                    $fieldTypes[$field['name']] = $field['type'];
+                }
+            }
+        }
+        abort_unless(in_array($fieldTypes[$fieldName] ?? null, ['file', 'signature'], true), 404);
         $files = $submission->response_data[$fieldName] ?? null;
         $file = is_array($files) && array_is_list($files) ? ($files[$fileIndex] ?? null) : ($fileIndex === 0 ? $files : null);
         abort_unless(is_array($file) && is_string($file['private_path'] ?? null), 404);

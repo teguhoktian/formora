@@ -51,6 +51,22 @@ class FormBuilderTest extends TestCase
         $this->assertSame('email', $schema['pages'][0]['fields'][0]['type']);
     }
 
+    public function test_builder_can_add_date_mode_presets_and_signature_field(): void
+    {
+        [$owner, $form] = $this->makeFormFor('owner');
+        $component = Livewire::actingAs($owner)->test(FormBuilder::class, ['formId' => $form->id]);
+
+        $component->call('addDateField', 'time')
+            ->call('addDateField', 'datetime')
+            ->call('addDateField', 'date_range')
+            ->call('addField', 'signature');
+
+        $fields = $form->versions()->firstOrFail()->fresh()->schema['pages'][0]['fields'];
+        $this->assertSame(['time', 'datetime', 'date_range'], array_column(array_map(fn (array $field): array => $field['settings'], array_slice($fields, 0, 3)), 'mode'));
+        $this->assertSame('signature', $fields[3]['type']);
+        $this->assertSame('Tanda tangan', $fields[3]['label']);
+    }
+
     public function test_builder_reorders_fields_using_stable_ids(): void
     {
         [$owner, $form] = $this->makeFormFor('owner');

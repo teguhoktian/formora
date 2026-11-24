@@ -342,6 +342,28 @@ class FormBuilder extends Component
         });
     }
 
+    public function addDateField(string $mode, FormBuilderService $builder, FormSchemaService $schemas): void
+    {
+        abort_unless(in_array($mode, ['date', 'time', 'datetime', 'date_range'], true), 422);
+        $this->authorizeCurrentForm();
+        $this->attemptSave(function () use ($mode, $builder, $schemas): void {
+            $schema = $this->schema();
+            $pageIndex = $this->pageIndex($schema, $this->selectedPageId);
+            $field = $schemas->newField('date', $schema);
+            $field['settings'] = ['mode' => $mode];
+            $field['label'] = match ($mode) {
+                'time' => 'Jam',
+                'datetime' => 'Tanggal dan waktu',
+                'date_range' => 'Rentang tanggal',
+                default => 'Tanggal',
+            };
+            $schema['pages'][$pageIndex]['fields'][] = $field;
+            $this->saveSchema($schema, $builder, $schemas);
+            $this->selectedFieldId = $field['id'];
+            $this->syncFieldDraft($field);
+        });
+    }
+
     public function selectPage(string $pageId): void
     {
         $schema = $this->schema();

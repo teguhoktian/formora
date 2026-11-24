@@ -424,3 +424,24 @@ Status: implementasi selesai untuk kondisi satu aturan per field pada halaman ya
 - Regression test mencakup label opsi, nama file, dan tidak bocornya path privat.
 - Lampiran kini memiliki tautan unduh privat pada detail submission. Endpoint memeriksa workspace, izin `downloadSubmissions`, bahwa path berada dalam direktori submission yang tepat, dan mencatat audit event tanpa nama/path file. Role viewer tetap dapat melihat detail tetapi tidak dapat mengunduh.
 - Ekspor CSV memakai formatter yang sama untuk label pilihan dan nama lampiran, serta tetap memasking field sensitif dan mengecualikan path privat.
+
+## Field tanggal eksplisit, tanda tangan, dan submit asinkron
+
+- Katalog field menyediakan preset Jam, Tanggal dan waktu, serta Rentang tanggal; semuanya memakai schema tanggal berversi yang sudah didukung dan validasi server yang sama.
+- Menambahkan field Tanda tangan berbasis canvas. Data PNG divalidasi ukuran dan MIME-nya, lalu disimpan privat; hanya metadata path privat yang masuk submission. Unduh tunduk pada izin lampiran yang sama.
+- Submit form publik memakai Fetch/FormData. Respons validasi JSON menandai field dan mengarahkan ke halaman yang gagal tanpa reload, sehingga jawaban teks dan file pilihan browser tetap tersedia. Respons sukses menampilkan nomor referensi tanpa navigasi.
+- Tetap ada fallback submit HTML bila JavaScript tidak aktif. Dalam fallback itu, browser dapat mengosongkan pilihan file saat redirect validasi.
+
+### Validasi batch
+
+- `php artisan test --compact tests/Unit/FormSchemaServiceTest.php tests/Feature/FormBuilderTest.php tests/Feature/PublicFormTest.php tests/Feature/SubmissionManagementTest.php` — lulus, 44 test / 211 assertion.
+- `php artisan view:cache` lalu `php artisan view:clear` — lulus.
+- `vendor/bin/pint --test` pada file PHP batch — lulus.
+- `composer run types:check --no-interaction` — lulus, PHPStan 0 error.
+- `npm run build` — lulus; ada peringatan opsional `fontaine` untuk fallback font.
+- `git diff --check` — lulus.
+- Tidak ada migration atau perubahan database.
+
+### Pemeriksaan manual tersisa
+
+- Uji gambar tanda tangan di browser desktop dan perangkat sentuh, serta pastikan state file tetap terpilih ketika server mengembalikan validasi 422. Automated feature test memverifikasi endpoint JSON dan penyimpanan privat; belum menjalankan browser E2E.
